@@ -124,6 +124,12 @@ last answer and `Ctrl+Q` quits.
   refer to `u(n-1)` are not supported.
 - There is no programming (`PRGM`), no `APPS`, and no link or transfer menu.
 - There is no `DRAW` menu, so no drawing on top of a graph by hand.
+- Degrees-minutes-seconds can be displayed with `▶DMS` but not typed in, so
+  `30°15'` is a syntax error.
+- `ENTER` in the `Y=`, list and matrix editors commits the field but does not
+  move the cursor to the next one.
+- The settings live in the same `Omacom/omacalc.conf` as the packaged
+  `omacalc`, so the two share their window size and position.
 
 ## Requirements
 
