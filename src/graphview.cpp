@@ -173,10 +173,15 @@ void GraphView::paint(QPainter *painter) {
         const int index = shading.value(QStringLiteral("function")).toInt();
         const double from = shading.value(QStringLiteral("from")).toDouble();
         const double to = shading.value(QStringLiteral("to")).toDouble();
-        if (index >= 0 && index < m_curves.size()) {
+        int position = -1;
+        for (int i = 0; i < m_curves.size(); ++i) {
+            if (m_curves.at(i).index == index)
+                position = i;
+        }
+        if (position >= 0) {
             QPainterPath path;
             bool started = false;
-            const Curve &curve = m_curves.at(index);
+            const Curve &curve = m_curves.at(position);
             for (const QPointF &point : curve.points) {
                 if (point.x() < from || point.x() > to || !finitePoint(point))
                     continue;
@@ -190,7 +195,7 @@ void GraphView::paint(QPainter *painter) {
             if (started) {
                 path.lineTo(toPixelX(to), toPixelY(0));
                 path.closeSubpath();
-                QColor fill = colorForIndex(m_accentColor, index);
+                QColor fill = colorForIndex(m_accentColor, curve.index);
                 fill.setAlphaF(0.28f);
                 painter->fillPath(path, fill);
             }
@@ -201,7 +206,7 @@ void GraphView::paint(QPainter *painter) {
     // asymptotes are not joined across the screen.
     for (int index = 0; index < m_curves.size(); ++index) {
         const Curve &curve = m_curves.at(index);
-        QPen pen(colorForIndex(m_accentColor, index));
+        QPen pen(colorForIndex(m_accentColor, curve.index));
         pen.setWidthF(curve.style == 1 ? 3.0 * line : 1.8 * line);
         if (curve.style == 2)
             pen.setStyle(Qt::DotLine);
@@ -240,7 +245,9 @@ void GraphView::paint(QPainter *painter) {
     // Stat plots.
     for (int index = 0; index < m_plots.size(); ++index) {
         const PlotPoints &plot = m_plots.at(index);
-        const QColor color = colorForIndex(m_accentColor, m_curves.size() + index);
+        // Stat plots take colours past the ten equations so a plot keeps its
+        // colour whatever is switched on in the Y= editor.
+        const QColor color = colorForIndex(m_accentColor, 10 + index);
         painter->setPen(QPen(color, 1.6 * line));
         const double markSize = 3.0 * line;
 

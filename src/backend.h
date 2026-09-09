@@ -14,6 +14,9 @@
 // One sampled graph, in graph coordinates. A point with a non-finite y marks a
 // break in the curve so asymptotes are not joined up across the screen.
 struct Curve {
+    // Which equation this is, counted in the Y= editor. Disabled equations are
+    // skipped when sampling, so this is not the position in the list.
+    int index = 0;
     QString name;
     QVector<QPointF> points;
     int style = 0;  // 0 line, 1 thick, 2 dotted

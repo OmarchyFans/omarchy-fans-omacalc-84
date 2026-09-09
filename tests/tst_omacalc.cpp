@@ -283,6 +283,42 @@ private slots:
             QVERIFY(std::abs(point.y() - point.x() * point.x()) < 1e-9);
     }
 
+    void ignoresSettingTheSameValueTwice() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        QSignalSpy equations(&calculator, &Backend::functionsChanged);
+        calculator.setFunctionBody(0, QStringLiteral("X²"));
+        calculator.setFunctionBody(0, QStringLiteral("X²"));
+        QCOMPARE(equations.count(), 1);
+
+        calculator.clearList(QStringLiteral("L1"));
+        QSignalSpy listEdits(&calculator, &Backend::listsChanged);
+        calculator.setListCell(QStringLiteral("L1"), 0, QStringLiteral("7"));
+        calculator.setListCell(QStringLiteral("L1"), 0, QStringLiteral("7"));
+        QCOMPARE(listEdits.count(), 1);
+
+        calculator.resizeMatrix(QStringLiteral("[B]"), 1, 1);
+        QSignalSpy cells(&calculator, &Backend::matricesChanged);
+        QVERIFY(calculator.setMatrixCell(QStringLiteral("[B]"), 0, 0, QStringLiteral("3")));
+        QVERIFY(calculator.setMatrixCell(QStringLiteral("[B]"), 0, 0, QStringLiteral("3")));
+        QCOMPARE(cells.count(), 1);
+    }
+
+    void keepsCurveColoursWithEquationsSwitchedOff() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        calculator.setFunctionBody(0, QStringLiteral("X"));
+        calculator.setFunctionBody(2, QStringLiteral("X+1"));
+        calculator.setFunctionEnabled(0, false);
+
+        const QVector<Curve> curves = calculator.sampleCurves(60);
+        QCOMPARE(curves.size(), 1);
+        // Y3 keeps its own index even though Y1 is not drawn.
+        QCOMPARE(curves.first().index, 2);
+        QCOMPARE(curves.first().name, QStringLiteral("Y3"));
+        calculator.setFunctionEnabled(0, true);
+    }
+
     void switchesEquationSetWithTheMode() {
         Backend calculator;
         calculator.setGraphMode(2);

@@ -24,7 +24,8 @@ Item {
     }
 
     function setAnswer(key, value) {
-        var next = screen.answers;
+        // A fresh object, so the change actually reaches the bindings.
+        var next = Object.assign({}, screen.answers);
         next[key] = value;
         screen.answers = next;
     }

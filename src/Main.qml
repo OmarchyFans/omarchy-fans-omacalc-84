@@ -264,6 +264,10 @@ ApplicationWindow {
 
     function runCalc(name) {
         showScreen(3);
+        // CALC works on the traced equation; start tracing so it is the first
+        // equation that is actually switched on rather than Y1 by default.
+        if (!backend.tracing)
+            backend.startTrace();
         var w = backend.window;
         var left = formatWindowValue(w.xMin);
         var right = formatWindowValue(w.xMax);

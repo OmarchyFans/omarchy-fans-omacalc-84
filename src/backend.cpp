@@ -1,5 +1,6 @@
 #include "backend.h"
 
+#include "special.h"
 #include "stats.h"
 
 #include <QClipboard>
@@ -321,6 +322,8 @@ void Backend::setFunctionBody(int index, const QString &body) {
     if (index < 0 || index >= countForMode(m_graphMode))
         return;
     GraphFunction &function = m_functions[offset + index];
+    if (function.body == body.trimmed())
+        return;
     function.body = body.trimmed();
     if (function.body.isEmpty())
         m_context.functions.remove(function.name);
@@ -339,6 +342,8 @@ void Backend::setFunctionEnabled(int index, bool enabled) {
     const int offset = offsetForMode(m_graphMode);
     if (index < 0 || index >= countForMode(m_graphMode))
         return;
+    if (m_functions.at(offset + index).enabled == enabled)
+        return;
     m_functions[offset + index].enabled = enabled;
     // A parametric pair is switched on and off together.
     if (m_graphMode == 1) {
@@ -352,6 +357,8 @@ void Backend::setFunctionEnabled(int index, bool enabled) {
 void Backend::setFunctionStyle(int index, int style) {
     const int offset = offsetForMode(m_graphMode);
     if (index < 0 || index >= countForMode(m_graphMode))
+        return;
+    if (m_functions.at(offset + index).style == std::clamp(style, 0, 2))
         return;
     m_functions[offset + index].style = std::clamp(style, 0, 2);
     emit functionsChanged();
@@ -695,6 +702,7 @@ QVector<Curve> Backend::sampleCurves(int pixelWidth) {
                 || yEquation.body.trimmed().isEmpty())
                 continue;
             Curve curve;
+            curve.index = pair;
             curve.name = xEquation.name + QStringLiteral("/") + yEquation.name;
             curve.style = xEquation.style;
             const double step = m_window.tStep != 0 ? std::abs(m_window.tStep) : 0.1;
@@ -720,6 +728,7 @@ QVector<Curve> Backend::sampleCurves(int pixelWidth) {
             if (!function.enabled || function.body.trimmed().isEmpty())
                 continue;
             Curve curve;
+            curve.index = i;
             curve.name = function.name;
             curve.style = function.style;
             const double step = m_window.thetaStep != 0 ? std::abs(m_window.thetaStep) : 0.1;
@@ -745,6 +754,7 @@ QVector<Curve> Backend::sampleCurves(int pixelWidth) {
             if (!function.enabled || function.body.trimmed().isEmpty())
                 continue;
             Curve curve;
+            curve.index = i;
             curve.name = function.name;
             curve.style = function.style;
             for (double n = m_window.nMin; n <= m_window.nMax + 1e-12; n += 1.0) {
@@ -768,6 +778,7 @@ QVector<Curve> Backend::sampleCurves(int pixelWidth) {
         if (!function.enabled || function.body.trimmed().isEmpty())
             continue;
         Curve curve;
+        curve.index = i;
         curve.name = function.name;
         curve.style = function.style;
         curve.points.reserve(steps + 1);
@@ -850,12 +861,7 @@ QVector<PlotPoints> Backend::samplePlots() {
             const double n = double(sorted.size());
             for (size_t i = 0; i < sorted.size(); ++i) {
                 const double area = (double(i) + 0.5) / n;
-                const double z = calc::evaluate(QStringLiteral("invNorm(")
-                                                    + QString::number(area, 'g', 12)
-                                                    + QStringLiteral(")"),
-                                                m_context)
-                                     .real();
-                points.points.append(QPointF(sorted[i], z));
+                points.points.append(QPointF(sorted[i], special::invNormal(area, 0, 1)));
             }
         }
         result.append(points);
@@ -1162,8 +1168,9 @@ void Backend::setListCell(const QString &name, int row, const QString &text) {
 
     if (text.trimmed().isEmpty()) {
         // Clearing the last cell shortens the list, the way DEL does.
-        if (row < int(items.size()))
-            items.erase(items.begin() + row);
+        if (row >= int(items.size()))
+            return;
+        items.erase(items.begin() + row);
     } else {
         double value = 0;
         try {
@@ -1171,6 +1178,8 @@ void Backend::setListCell(const QString &name, int row, const QString &text) {
         } catch (const calc::Error &) {
             return;
         }
+        if (row < int(items.size()) && items[size_t(row)] == calc::Complex(value, 0))
+            return;
         while (int(items.size()) <= row)
             items.push_back(calc::Complex(0, 0));
         items[size_t(row)] = calc::Complex(value, 0);
@@ -1430,11 +1439,15 @@ bool Backend::setMatrixCell(const QString &name, int row, int column, const QStr
     calc::Matrix matrix = existing.matrix();
     if (row < 0 || row >= matrix.rows || column < 0 || column >= matrix.cols)
         return false;
+    calc::Complex value;
     try {
-        matrix.at(row, column) = calc::evaluate(text, m_context).number();
+        value = calc::evaluate(text, m_context).number();
     } catch (const calc::Error &) {
         return false;
     }
+    if (matrix.at(row, column) == value)
+        return true;
+    matrix.at(row, column) = value;
     m_context.store(name, calc::Value::fromMatrix(matrix));
     emit matricesChanged();
     return true;
