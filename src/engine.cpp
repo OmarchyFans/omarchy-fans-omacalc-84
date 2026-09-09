@@ -1105,7 +1105,8 @@ bool isDefinitionName(const QString &name) {
     if (name.size() >= 2 && (name.at(0) == u'Y' || name.at(0) == u'r' || name.at(0) == u'X')
         && name.at(1).isDigit())
         return true;
-    return false;
+    // Sequences are named by a single letter.
+    return name == QStringLiteral("u") || name == QStringLiteral("v") || name == QStringLiteral("w");
 }
 
 std::vector<double> realList(const Value &value) {
@@ -2246,6 +2247,22 @@ Value evaluate(const NodePtr &program, Context &context) {
 Value evaluate(const QString &source, Context &context) {
     context.displayHint = DisplayHint::None;
     return evaluate(parse(source), context);
+}
+
+// --- Numeric routines shared with the CALC menu -----------------------------
+
+double integrateFunction(const RealFunction &f, double a, double b) { return integrate(f, a, b); }
+
+double derivativeAt(const RealFunction &f, double x, double h) {
+    return centralDerivative(f, x, h);
+}
+
+bool findRoot(const RealFunction &f, double low, double high, double *root) {
+    return bisect(f, low, high, root);
+}
+
+double findExtremum(const RealFunction &f, double low, double high, bool maximum) {
+    return goldenSection(f, low, high, maximum);
 }
 
 // --- Formatting ------------------------------------------------------------

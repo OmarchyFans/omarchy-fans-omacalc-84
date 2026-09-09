@@ -10,6 +10,7 @@
 #include <QStringList>
 
 #include <complex>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -133,6 +134,11 @@ bool toFraction(double value, long long *numerator, long long *denominator);
 
 // Shared numeric helpers, also used by the grapher and the CALC menu.
 double toRadians(double angle, AngleMode mode);
+using RealFunction = std::function<double(double)>;
+double integrateFunction(const RealFunction &f, double a, double b);
+double derivativeAt(const RealFunction &f, double x, double h);
+bool findRoot(const RealFunction &f, double low, double high, double *root);
+double findExtremum(const RealFunction &f, double low, double high, bool maximum);
 double fromRadians(double radians, AngleMode mode);
 
 }  // namespace calc

@@ -5,13 +5,9 @@
 #include "backend.h"
 #include "engine.h"
 #include "special.h"
+#include "stats.h"
 
 namespace {
-void press(Backend &calculator, const QString &keys) {
-    const QStringList sequence = keys.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-    for (const QString &key : sequence)
-        calculator.pressKey(key);
-}
 
 // Engine helpers: evaluate a line the way the home screen does and hand back
 // either the formatted answer, the raw number, or the error name.
@@ -22,6 +18,17 @@ QString answer(const QString &source, calc::Context &context) {
 
 double number(const QString &source, calc::Context &context) {
     return calc::evaluate(source, context).number().real();
+}
+
+// Equations persist in the settings, so a test that graphs starts from a
+// clean editor in every mode.
+void clearAllEquations(Backend &calculator) {
+    const int mode = calculator.graphMode();
+    for (int each = 0; each < 4; ++each) {
+        calculator.setGraphMode(each);
+        calculator.clearFunctions();
+    }
+    calculator.setGraphMode(mode);
 }
 
 QString errorFor(const QString &source, calc::Context &context) {
@@ -43,201 +50,6 @@ private slots:
         QSettings::setDefaultFormat(QSettings::IniFormat);
         QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
                            m_settingsDirectory.path());
-    }
-
-    void startsAtZero() {
-        Backend calculator;
-        QCOMPARE(calculator.display(), QStringLiteral("0"));
-        QCOMPARE(calculator.expression(), QString());
-    }
-
-    void calculatesWithPrecedence() {
-        Backend calculator;
-        press(calculator, "4 2 × 3 + 7 =");
-        QCOMPARE(calculator.display(), QStringLiteral("133"));
-        QCOMPARE(calculator.expression(), QStringLiteral("42 × 3 + 7"));
-
-        press(calculator, "clear 2 + 3 × 4 =");
-        QCOMPARE(calculator.display(), QStringLiteral("14"));
-
-        press(calculator, "clear 1 0 - 4 ÷ 2 =");
-        QCOMPARE(calculator.display(), QStringLiteral("8"));
-    }
-
-    void showsEntryWhileTyping() {
-        Backend calculator;
-        press(calculator, "4 2 ×");
-        QCOMPARE(calculator.display(), QStringLiteral("42"));
-        QCOMPARE(calculator.expression(), QStringLiteral("42 ×"));
-
-        press(calculator, "3");
-        QCOMPARE(calculator.display(), QStringLiteral("3"));
-    }
-
-    void handlesDecimals() {
-        Backend calculator;
-        press(calculator, ". 5 + . 2 5 =");
-        QCOMPARE(calculator.display(), QStringLiteral("0.75"));
-
-        // Binary-float noise stays out of the display.
-        press(calculator, "clear 0 . 1 + 0 . 2 =");
-        QCOMPARE(calculator.display(), QStringLiteral("0.3"));
-
-        // A second decimal point in one number is ignored.
-        press(calculator, "clear 1 . 5 . 5");
-        QCOMPARE(calculator.display(), QStringLiteral("1.55"));
-    }
-
-    void divisionByZeroErrors() {
-        Backend calculator;
-        press(calculator, "1 ÷ 0 =");
-        QCOMPARE(calculator.display(), QStringLiteral("Error"));
-
-        // Digits recover from an error without an explicit clear.
-        press(calculator, "5");
-        QCOMPARE(calculator.display(), QStringLiteral("5"));
-    }
-
-    void percentOfRunningTotal() {
-        Backend calculator;
-
-        // With a pending + or −, x% means x percent of the running total.
-        press(calculator, "2 0 0 + 1 0 % =");
-        QCOMPARE(calculator.display(), QStringLiteral("220"));
-
-        press(calculator, "clear 2 0 0 - 1 0 % =");
-        QCOMPARE(calculator.display(), QStringLiteral("180"));
-
-        // With × or ÷, or standalone, x% is simply x ÷ 100.
-        press(calculator, "clear 2 0 0 × 1 0 % =");
-        QCOMPARE(calculator.display(), QStringLiteral("20"));
-
-        press(calculator, "clear 5 0 %");
-        QCOMPARE(calculator.display(), QStringLiteral("0.5"));
-
-        // After equals, percent picks up from the result.
-        press(calculator, "clear 4 0 + 1 0 = %");
-        QCOMPARE(calculator.display(), QStringLiteral("0.5"));
-    }
-
-    void percentAndSign() {
-        Backend calculator;
-        press(calculator, "8 sign");
-        QCOMPARE(calculator.display(), QStringLiteral("-8"));
-        press(calculator, "sign");
-        QCOMPARE(calculator.display(), QStringLiteral("8"));
-
-        press(calculator, "clear 4 + 8 sign =");
-        QCOMPARE(calculator.display(), QStringLiteral("-4"));
-    }
-
-    void signStartsNewOperand() {
-        Backend calculator;
-
-        // Sign with nothing typed starts a fresh negative operand rather than
-        // negating the previous one: 4 + ± 2 = is 4 + (-2), not 4 + (-42).
-        press(calculator, "4 + sign 2 =");
-        QCOMPARE(calculator.display(), QStringLiteral("2"));
-        QCOMPARE(calculator.expression(), QStringLiteral("4 + -2"));
-
-        press(calculator, "clear sign");
-        QCOMPARE(calculator.display(), QStringLiteral("-0"));
-        press(calculator, "5");
-        QCOMPARE(calculator.display(), QStringLiteral("-5"));
-    }
-
-    void chainsWithFullPrecision() {
-        Backend calculator;
-
-        // Chaining continues from the exact value, not the rounded display.
-        press(calculator, "1 ÷ 3 = × 3 =");
-        QCOMPARE(calculator.display(), QStringLiteral("1"));
-
-        // Integers within the 15-digit entry limit survive exactly.
-        press(calculator, "clear 9 9 9 9 9 9 9 9 9 9 9 9 9 9 =");
-        QCOMPARE(calculator.display(), QStringLiteral("99999999999999"));
-    }
-
-    void capsEntryAtFifteenDigits() {
-        Backend calculator;
-        press(calculator, "1 2 3 4 5 6 7 8 9 1 2 3 4 5 6 7 8");
-        QCOMPARE(calculator.display(), QStringLiteral("123456789123456"));
-
-        // The decimal point does not count against the digit cap.
-        press(calculator, "clear . 1 2 3 4 5 6 7 8 9 1 2 3 4 5 6 7");
-        QCOMPARE(calculator.display(), QStringLiteral("0.123456789123456"));
-    }
-
-    void backspaceEdits() {
-        Backend calculator;
-        press(calculator, "1 2 3 backspace");
-        QCOMPARE(calculator.display(), QStringLiteral("12"));
-
-        press(calculator, "backspace backspace backspace");
-        QCOMPARE(calculator.display(), QStringLiteral("0"));
-    }
-
-    void chainsFromResult() {
-        Backend calculator;
-        press(calculator, "6 × 7 = × 2 =");
-        QCOMPARE(calculator.display(), QStringLiteral("84"));
-        QCOMPARE(calculator.expression(), QStringLiteral("42 × 2"));
-
-        // A digit after equals starts fresh instead of appending to the result.
-        press(calculator, "9");
-        QCOMPARE(calculator.display(), QStringLiteral("9"));
-        QCOMPARE(calculator.expression(), QString());
-    }
-
-    void replacesDanglingOperator() {
-        Backend calculator;
-        press(calculator, "4 + × 2 =");
-        QCOMPARE(calculator.display(), QStringLiteral("8"));
-
-        // Equals with a trailing operator drops it.
-        press(calculator, "clear 9 + =");
-        QCOMPARE(calculator.display(), QStringLiteral("9"));
-    }
-
-    void pastesNumbers() {
-        Backend calculator;
-        QClipboard *clipboard = QGuiApplication::clipboard();
-
-        clipboard->setText(QStringLiteral(" 42.5 "));
-        calculator.pasteNumber();
-        QCOMPARE(calculator.display(), QStringLiteral("42.5"));
-
-        // A pasted number is a normal entry that calculates like any other.
-        press(calculator, "+ . 5 =");
-        QCOMPARE(calculator.display(), QStringLiteral("43"));
-
-        // Decimal commas are welcome; garbage is ignored.
-        clipboard->setText(QStringLiteral("1,5"));
-        calculator.pasteNumber();
-        QCOMPARE(calculator.display(), QStringLiteral("1.5"));
-
-        clipboard->setText(QStringLiteral("not a number"));
-        calculator.pasteNumber();
-        QCOMPARE(calculator.display(), QStringLiteral("1.5"));
-    }
-
-    void evaluatesTokens() {
-        bool ok = false;
-        QCOMPARE(Backend::evaluateTokens({"2", "+", "3", "×", "4"}, &ok), 14.0);
-        QVERIFY(ok);
-
-        Backend::evaluateTokens({"2", "+"}, &ok);
-        QVERIFY(!ok);
-
-        Backend::evaluateTokens({"1", "÷", "0"}, &ok);
-        QVERIFY(!ok);
-    }
-
-    void formatsNumbers() {
-        QCOMPARE(Backend::formatNumber(133), QStringLiteral("133"));
-        QCOMPARE(Backend::formatNumber(0.1 + 0.2), QStringLiteral("0.3"));
-        QCOMPARE(Backend::formatNumber(-0.0), QStringLiteral("0"));
-        QCOMPARE(Backend::formatNumber(1e15), QStringLiteral("1e+15"));
     }
 
 
@@ -436,6 +248,282 @@ private slots:
         QCOMPARE(answer("1 and 0", context), QStringLiteral("0"));
         QCOMPARE(answer("1 or 0", context), QStringLiteral("1"));
         QCOMPARE(answer("not(0)", context), QStringLiteral("1"));
+    }
+
+
+    // --- Backend -----------------------------------------------------------
+
+    void keepsAnswersAndHistory() {
+        Backend calculator;
+        calculator.clearHistory();
+        QCOMPARE(calculator.submit(QStringLiteral("2+3")).value("answer"), QStringLiteral("5"));
+        QCOMPARE(calculator.submit(QStringLiteral("Ans*2")).value("answer"), QStringLiteral("10"));
+        QCOMPARE(calculator.lastAnswer(), QStringLiteral("10"));
+        QCOMPARE(calculator.history().size(), 2);
+    }
+
+    void reportsErrorsLikeTheCalculator() {
+        Backend calculator;
+        calculator.clearHistory();
+        const QVariantMap result = calculator.submit(QStringLiteral("1/0"));
+        QCOMPARE(result.value("ok").toBool(), false);
+        QCOMPARE(result.value("answer").toString(), QStringLiteral("ERR:DIVIDE BY 0"));
+    }
+
+    void samplesEquationsForTheGraph() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        calculator.setFunctionBody(0, QStringLiteral("X²"));
+        calculator.zoomStandard();
+
+        const QVector<Curve> curves = calculator.sampleCurves(100);
+        QCOMPARE(curves.size(), 1);
+        QVERIFY(curves.first().points.size() > 50);
+        for (const QPointF &point : curves.first().points)
+            QVERIFY(std::abs(point.y() - point.x() * point.x()) < 1e-9);
+    }
+
+    void switchesEquationSetWithTheMode() {
+        Backend calculator;
+        calculator.setGraphMode(2);
+        const QVariantList polar = calculator.functions();
+        QCOMPARE(polar.size(), 6);
+        QCOMPARE(polar.first().toMap().value("name").toString(), QStringLiteral("r1"));
+        calculator.setGraphMode(0);
+        QCOMPARE(calculator.functions().size(), 10);
+    }
+
+    void graphsPolarAndParametricCurves() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        calculator.setGraphMode(2);
+        calculator.setFunctionBody(0, QStringLiteral("2"));
+        const QVector<Curve> circle = calculator.sampleCurves(100);
+        QCOMPARE(circle.size(), 1);
+        for (const QPointF &point : circle.first().points) {
+            if (std::isfinite(point.y()))
+                QVERIFY(std::abs(std::hypot(point.x(), point.y()) - 2.0) < 1e-9);
+        }
+
+        calculator.setGraphMode(1);
+        calculator.setFunctionBody(0, QStringLiteral("cos(T)"));
+        calculator.setFunctionBody(1, QStringLiteral("sin(T)"));
+        const QVector<Curve> unitCircle = calculator.sampleCurves(100);
+        QCOMPARE(unitCircle.size(), 1);
+        for (const QPointF &point : unitCircle.first().points) {
+            if (std::isfinite(point.y()))
+                QVERIFY(std::abs(std::hypot(point.x(), point.y()) - 1.0) < 1e-9);
+        }
+        calculator.setGraphMode(0);
+    }
+
+    void zoomsAndRemembersThePreviousWindow() {
+        Backend calculator;
+        calculator.zoomStandard();
+        QCOMPARE(calculator.window().value("xMin").toDouble(), -10.0);
+        calculator.zoomIn();
+        QCOMPARE(calculator.window().value("xMin").toDouble(), -2.5);
+        calculator.zoomPrevious();
+        QCOMPARE(calculator.window().value("xMin").toDouble(), -10.0);
+
+        calculator.zoomDecimal();
+        QCOMPARE(calculator.window().value("xMax").toDouble(), 4.7);
+        calculator.zoomBox(-1, -2, 3, 4);
+        QCOMPARE(calculator.window().value("xMin").toDouble(), -1.0);
+        QCOMPARE(calculator.window().value("yMax").toDouble(), 4.0);
+    }
+
+    void fillsTheTable() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        calculator.setFunctionBody(0, QStringLiteral("2X"));
+        calculator.setTableStart(0);
+        calculator.setTableStep(1);
+
+        const QVariantList rows = calculator.tableRows(3);
+        QCOMPARE(rows.size(), 4);  // one header plus three rows
+        QCOMPARE(rows.at(0).toMap().value("header").toBool(), true);
+        QCOMPARE(rows.at(1).toMap().value("parameter").toString(), QStringLiteral("0"));
+        QCOMPARE(rows.at(1).toMap().value("columns").toStringList().first(), QStringLiteral("0"));
+        QCOMPARE(rows.at(3).toMap().value("columns").toStringList().first(), QStringLiteral("4"));
+    }
+
+    void tracesAlongTheCurve() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        calculator.setFunctionBody(0, QStringLiteral("X²"));
+        calculator.zoomStandard();
+        calculator.startTrace();
+        QVERIFY(calculator.tracing());
+        calculator.traceTo(3);
+        QCOMPARE(calculator.traceX(), 3.0);
+        QCOMPARE(calculator.traceY(), 9.0);
+        calculator.stopTrace();
+        QVERIFY(!calculator.tracing());
+    }
+
+    void runsTheCalcMenu() {
+        Backend calculator;
+        clearAllEquations(calculator);
+        calculator.setFunctionBody(0, QStringLiteral("X²-4"));
+        calculator.setFunctionBody(1, QStringLiteral("X"));
+
+        const QVariantMap zero = calculator.calcZero(0, 0, 5);
+        QVERIFY(zero.value("ok").toBool());
+        QVERIFY(std::abs(zero.value("x").toDouble() - 2.0) < 1e-6);
+
+        const QVariantMap minimum = calculator.calcExtremum(0, -5, 5, false);
+        QVERIFY(std::abs(minimum.value("x").toDouble()) < 1e-5);
+
+        const QVariantMap slope = calculator.calcDerivative(0, 3);
+        QVERIFY(std::abs(slope.value("y").toDouble() - 6.0) < 1e-6);
+
+        const QVariantMap area = calculator.calcIntegral(0, 0, 3);
+        QVERIFY(std::abs(area.value("y").toDouble() - (9.0 - 12.0)) < 1e-8);
+
+        // X² - 4 meets X where x² - x - 4 = 0, at (1 + √17) / 2.
+        const QVariantMap crossing = calculator.calcIntersect(0, 1, 0, 5);
+        QVERIFY(crossing.value("ok").toBool());
+        QVERIFY(std::abs(crossing.value("x").toDouble() - (1.0 + std::sqrt(17.0)) / 2.0) < 1e-6);
+    }
+
+    void editsListsAndComputesStatistics() {
+        Backend calculator;
+        calculator.clearList(QStringLiteral("L1"));
+        calculator.clearList(QStringLiteral("L2"));
+        const double xs[] = {1, 2, 3, 4};
+        const double ys[] = {2, 4, 6, 8};
+        for (int i = 0; i < 4; ++i) {
+            calculator.setListCell(QStringLiteral("L1"), i, QString::number(xs[i]));
+            calculator.setListCell(QStringLiteral("L2"), i, QString::number(ys[i]));
+        }
+        QCOMPARE(calculator.listColumn(QStringLiteral("L1")).size(), 4);
+
+        const QVariantList summary =
+            calculator.oneVariableStats(QStringLiteral("L1"), QString());
+        QCOMPARE(summary.at(0).toMap().value("label").toString(), QStringLiteral("x̄"));
+        QCOMPARE(summary.at(0).toMap().value("value").toString(), QStringLiteral("2.5"));
+
+        const QVariantList both =
+            calculator.twoVariableStats(QStringLiteral("L1"), QStringLiteral("L2"));
+        QVERIFY(!both.isEmpty());
+
+        const QVariantList fit = calculator.regression(0, QStringLiteral("L1"),
+                                                       QStringLiteral("L2"), -1);
+        QCOMPARE(fit.at(1).toMap().value("label").toString(), QStringLiteral("a"));
+        QCOMPARE(fit.at(1).toMap().value("value").toString(), QStringLiteral("2"));
+        QCOMPARE(fit.at(3).toMap().value("value").toString(), QStringLiteral("1"));  // r²
+    }
+
+    void plotsStatisticalData() {
+        Backend calculator;
+        calculator.clearList(QStringLiteral("L1"));
+        calculator.clearList(QStringLiteral("L2"));
+        for (int i = 0; i < 4; ++i) {
+            calculator.setListCell(QStringLiteral("L1"), i, QString::number(i + 1));
+            calculator.setListCell(QStringLiteral("L2"), i, QString::number((i + 1) * 2));
+        }
+        calculator.setPlot(0, true, 0, QStringLiteral("L1"), QStringLiteral("L2"), 0);
+        const QVector<PlotPoints> plots = calculator.samplePlots();
+        QCOMPARE(plots.size(), 1);
+        QCOMPARE(plots.first().points.size(), 4);
+        QCOMPARE(plots.first().points.at(2), QPointF(3, 6));
+        calculator.setPlot(0, false, 0, QStringLiteral("L1"), QStringLiteral("L2"), 0);
+    }
+
+    void editsMatrices() {
+        Backend calculator;
+        calculator.resizeMatrix(QStringLiteral("[A]"), 2, 2);
+        QVERIFY(calculator.setMatrixCell(QStringLiteral("[A]"), 0, 0, QStringLiteral("1")));
+        QVERIFY(calculator.setMatrixCell(QStringLiteral("[A]"), 0, 1, QStringLiteral("2")));
+        QVERIFY(calculator.setMatrixCell(QStringLiteral("[A]"), 1, 0, QStringLiteral("3")));
+        QVERIFY(calculator.setMatrixCell(QStringLiteral("[A]"), 1, 1, QStringLiteral("4")));
+
+        const QVariantMap data = calculator.matrixData(QStringLiteral("[A]"));
+        QCOMPARE(data.value("rows").toInt(), 2);
+        QCOMPARE(calculator.submit(QStringLiteral("det([A])")).value("answer"),
+                 QStringLiteral("-2"));
+    }
+
+    void remembersModesBetweenRuns() {
+        {
+            Backend calculator;
+            calculator.setAngleMode(1);
+            calculator.setNumberFormat(1);
+        }
+        Backend reopened;
+        QCOMPARE(reopened.angleMode(), 1);
+        QCOMPARE(reopened.numberFormat(), 1);
+        reopened.setAngleMode(0);
+        reopened.setNumberFormat(0);
+    }
+
+    // --- Statistics --------------------------------------------------------
+
+    void summarisesOneVariable() {
+        const stats::OneVariable summary = stats::oneVariable({1, 2, 3, 4, 5}, {});
+        QCOMPARE(summary.count, 5.0);
+        QCOMPARE(summary.mean, 3.0);
+        QCOMPARE(summary.median, 3.0);
+        QCOMPARE(summary.lowerQuartile, 1.5);
+        QCOMPARE(summary.upperQuartile, 4.5);
+        QVERIFY(std::abs(summary.sampleDeviation - std::sqrt(2.5)) < 1e-12);
+        QVERIFY(std::abs(summary.populationDeviation - std::sqrt(2.0)) < 1e-12);
+    }
+
+    void fitsEveryRegressionModel() {
+        const std::vector<double> x = {1, 2, 3, 4, 5};
+
+        const stats::Regression line = stats::fit(stats::Model::Linear, x, {3, 5, 7, 9, 11});
+        QVERIFY(line.valid);
+        QVERIFY(std::abs(line.coefficients[0] - 2.0) < 1e-9);
+        QVERIFY(std::abs(line.coefficients[1] - 1.0) < 1e-9);
+        QVERIFY(std::abs(line.correlation - 1.0) < 1e-9);
+
+        const stats::Regression quadratic =
+            stats::fit(stats::Model::Quadratic, x, {1, 4, 9, 16, 25});
+        QVERIFY(std::abs(quadratic.coefficients[0] - 1.0) < 1e-9);
+
+        const stats::Regression exponential =
+            stats::fit(stats::Model::Exponential, x, {6, 18, 54, 162, 486});
+        QVERIFY(std::abs(exponential.coefficients[0] - 2.0) < 1e-8);
+        QVERIFY(std::abs(exponential.coefficients[1] - 3.0) < 1e-8);
+
+        const stats::Regression power = stats::fit(stats::Model::Power, x, {2, 8, 18, 32, 50});
+        QVERIFY(std::abs(power.coefficients[0] - 2.0) < 1e-8);
+        QVERIFY(std::abs(power.coefficients[1] - 2.0) < 1e-8);
+
+        const stats::Regression logarithmic =
+            stats::fit(stats::Model::Logarithmic, x,
+                       {1, 1 + 2 * std::log(2.0), 1 + 2 * std::log(3.0), 1 + 2 * std::log(4.0),
+                        1 + 2 * std::log(5.0)});
+        QVERIFY(std::abs(logarithmic.coefficients[0] - 1.0) < 1e-8);
+        QVERIFY(std::abs(logarithmic.coefficients[1] - 2.0) < 1e-8);
+
+        const stats::Regression medianMedian =
+            stats::fit(stats::Model::MedianMedian, x, {3, 5, 7, 9, 11});
+        QVERIFY(medianMedian.valid);
+        QVERIFY(std::abs(medianMedian.coefficients[0] - 2.0) < 1e-9);
+    }
+
+    void fitsTheIterativeModels() {
+        std::vector<double> x;
+        std::vector<double> sine;
+        for (int i = 0; i < 24; ++i) {
+            const double value = double(i) * 0.25;
+            x.push_back(value);
+            sine.push_back(3.0 * std::sin(1.5 * value + 0.4) + 2.0);
+        }
+        const stats::Regression wave = stats::fit(stats::Model::Sinusoidal, x, sine);
+        QVERIFY(wave.valid);
+        QVERIFY(wave.determination > 0.999);
+
+        std::vector<double> logistic;
+        for (double value : x)
+            logistic.push_back(8.0 / (1.0 + 4.0 * std::exp(-1.2 * value)));
+        const stats::Regression curve = stats::fit(stats::Model::Logistic, x, logistic);
+        QVERIFY(curve.valid);
+        QVERIFY(curve.determination > 0.999);
     }
 
     void loadsCurrentOmarchyTheme() {

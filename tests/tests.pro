@@ -8,8 +8,10 @@ SOURCES += \
     tst_omacalc.cpp \
     ../src/backend.cpp \
     ../src/engine.cpp \
-    ../src/special.cpp
+    ../src/special.cpp \
+    ../src/stats.cpp
 HEADERS += \
     ../src/backend.h \
     ../src/engine.h \
-    ../src/special.h
+    ../src/special.h \
+    ../src/stats.h

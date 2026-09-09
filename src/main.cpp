@@ -3,14 +3,19 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
+#include <qqml.h>
 #include <QQmlContext>
 #include <QQmlError>
+#include <QDebug>
 #include <QQuickStyle>
 #include <QUrl>
 #include <QWindow>
 #include <QFile>
+#include <QQuickWindow>
+#include <QTimer>
 
 #include "backend.h"
+#include "graphview.h"
 #include "systemtheme.h"
 
 int main(int argc, char *argv[]) {
@@ -25,6 +30,8 @@ int main(int argc, char *argv[]) {
     app.setOrganizationDomain(QStringLiteral("omacom.io"));
 
     QQuickStyle::setStyle(QStringLiteral("Material"));
+
+    qmlRegisterType<GraphView>("Omacalc", 1, 0, "GraphView");
 
     Backend backend(&app);
     SystemTheme systemTheme(&app);
@@ -60,11 +67,46 @@ int main(int argc, char *argv[]) {
     });
     engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
 
+    // --screenshot writes the interface to a file and exits, which is how the
+    // look of the calculator is checked without a display attached.
+    QString screenshotPath;
+    const QStringList arguments = app.arguments();
+
+    // --screen opens straight onto one of the screens, for a launcher binding
+    // that goes right to the graph.
+    int initialScreen = 0;
+    const QStringList screenNames = {QStringLiteral("home"),   QStringLiteral("equations"),
+                                     QStringLiteral("window"), QStringLiteral("graph"),
+                                     QStringLiteral("table"),  QStringLiteral("lists"),
+                                     QStringLiteral("stats"),  QStringLiteral("matrix"),
+                                     QStringLiteral("mode")};
+    const int screenFlag = arguments.indexOf(QStringLiteral("--screen"));
+    if (screenFlag >= 0 && screenFlag + 1 < arguments.size()) {
+        const int named = screenNames.indexOf(arguments.at(screenFlag + 1));
+        if (named >= 0)
+            initialScreen = named;
+    }
+    engine.rootContext()->setContextProperty(QStringLiteral("initialScreen"), initialScreen);
+    const int screenshotFlag = arguments.indexOf(QStringLiteral("--screenshot"));
+    if (screenshotFlag >= 0 && screenshotFlag + 1 < arguments.size())
+        screenshotPath = arguments.at(screenshotFlag + 1);
+
     engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
     if (engine.rootObjects().isEmpty()) {
         qCritical() << "Could not load the Omacalc interface; resource available:"
                     << QFile::exists(QStringLiteral(":/Main.qml"));
         return -1;
+    }
+
+    if (!screenshotPath.isEmpty()) {
+        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
+        QTimer::singleShot(900, &app, [window, screenshotPath, &app]() {
+            if (window && window->grabWindow().save(screenshotPath))
+                qInfo().noquote() << "wrote" << screenshotPath;
+            else
+                qWarning() << "could not write" << screenshotPath;
+            app.quit();
+        });
     }
 
     return app.exec();

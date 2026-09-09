@@ -2,6 +2,17 @@
     <qresource prefix="/">
         <file alias="Main.qml">Main.qml</file>
         <file alias="CalcButton.qml">CalcButton.qml</file>
+        <file alias="FieldInput.qml">FieldInput.qml</file>
+        <file alias="HomeScreen.qml">HomeScreen.qml</file>
+        <file alias="EquationEditor.qml">EquationEditor.qml</file>
+        <file alias="WindowEditor.qml">WindowEditor.qml</file>
+        <file alias="GraphScreen.qml">GraphScreen.qml</file>
+        <file alias="TableScreen.qml">TableScreen.qml</file>
+        <file alias="ListEditor.qml">ListEditor.qml</file>
+        <file alias="ResultsScreen.qml">ResultsScreen.qml</file>
+        <file alias="MatrixEditor.qml">MatrixEditor.qml</file>
+        <file alias="ModeScreen.qml">ModeScreen.qml</file>
+        <file alias="MenuOverlay.qml">MenuOverlay.qml</file>
         <file alias="fonts/iAWriterMonoS-Regular.ttf">../fonts/iAWriterMonoS-Regular.ttf</file>
         <file alias="fonts/iAWriterMonoS-Bold.ttf">../fonts/iAWriterMonoS-Bold.ttf</file>
     </qresource>
