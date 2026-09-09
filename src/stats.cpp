@@ -1,5 +1,7 @@
 #include "stats.h"
 
+#include "special.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -449,6 +451,371 @@ Regression fit(Model model, const std::vector<double> &x, const std::vector<doub
     }
     }
     return result;
+}
+
+}  // namespace stats
+
+// --- Inferential statistics ------------------------------------------------
+
+namespace stats {
+namespace {
+
+double normalTailProbability(double z, Tail tail) {
+    const double upper = special::normalCdf(z, 40, 0, 1);
+    switch (tail) {
+    case Tail::Less:
+        return special::normalCdf(-40, z, 0, 1);
+    case Tail::Greater:
+        return upper;
+    default:
+        return 2.0 * special::normalCdf(std::abs(z), 40, 0, 1);
+    }
+}
+
+double studentTailProbability(double t, double degrees, Tail tail) {
+    switch (tail) {
+    case Tail::Less:
+        return special::studentCdf(-1e4, t, degrees);
+    case Tail::Greater:
+        return special::studentCdf(t, 1e4, degrees);
+    default:
+        return 2.0 * special::studentCdf(std::abs(t), 1e4, degrees);
+    }
+}
+
+Inference make(const QString &name, std::vector<std::pair<QString, double>> values) {
+    Inference result;
+    result.valid = true;
+    result.name = name;
+    result.values = std::move(values);
+    return result;
+}
+
+}  // namespace
+
+Inference zTest(double hypothesised, double deviation, double mean, double count, Tail tail) {
+    if (deviation <= 0 || count <= 0)
+        return {};
+    const double z = (mean - hypothesised) / (deviation / std::sqrt(count));
+    return make(QStringLiteral("Z-Test"),
+                {{QStringLiteral("z"), z},
+                 {QStringLiteral("p"), normalTailProbability(z, tail)},
+                 {QStringLiteral("x̄"), mean},
+                 {QStringLiteral("n"), count}});
+}
+
+Inference tTest(double hypothesised, double mean, double sampleDeviation, double count,
+                Tail tail) {
+    if (sampleDeviation <= 0 || count <= 1)
+        return {};
+    const double t = (mean - hypothesised) / (sampleDeviation / std::sqrt(count));
+    const double degrees = count - 1;
+    return make(QStringLiteral("T-Test"),
+                {{QStringLiteral("t"), t},
+                 {QStringLiteral("p"), studentTailProbability(t, degrees, tail)},
+                 {QStringLiteral("df"), degrees},
+                 {QStringLiteral("x̄"), mean},
+                 {QStringLiteral("Sx"), sampleDeviation},
+                 {QStringLiteral("n"), count}});
+}
+
+Inference twoSampleTTest(double meanA, double deviationA, double countA, double meanB,
+                         double deviationB, double countB, Tail tail, bool pooled) {
+    if (countA <= 1 || countB <= 1 || deviationA <= 0 || deviationB <= 0)
+        return {};
+
+    double t = 0;
+    double degrees = 0;
+    if (pooled) {
+        const double pooledVariance =
+            ((countA - 1) * deviationA * deviationA + (countB - 1) * deviationB * deviationB)
+            / (countA + countB - 2);
+        t = (meanA - meanB) / std::sqrt(pooledVariance * (1.0 / countA + 1.0 / countB));
+        degrees = countA + countB - 2;
+    } else {
+        const double a = deviationA * deviationA / countA;
+        const double b = deviationB * deviationB / countB;
+        t = (meanA - meanB) / std::sqrt(a + b);
+        // Welch-Satterthwaite, the calculator's default for unpooled samples.
+        degrees = (a + b) * (a + b)
+            / (a * a / (countA - 1) + b * b / (countB - 1));
+    }
+    return make(QStringLiteral("2-SampTTest"),
+                {{QStringLiteral("t"), t},
+                 {QStringLiteral("p"), studentTailProbability(t, degrees, tail)},
+                 {QStringLiteral("df"), degrees},
+                 {QStringLiteral("x̄1"), meanA},
+                 {QStringLiteral("x̄2"), meanB}});
+}
+
+Inference twoSampleZTest(double deviationA, double deviationB, double meanA, double countA,
+                         double meanB, double countB, Tail tail) {
+    if (deviationA <= 0 || deviationB <= 0 || countA <= 0 || countB <= 0)
+        return {};
+    const double z = (meanA - meanB)
+        / std::sqrt(deviationA * deviationA / countA + deviationB * deviationB / countB);
+    return make(QStringLiteral("2-SampZTest"),
+                {{QStringLiteral("z"), z},
+                 {QStringLiteral("p"), normalTailProbability(z, tail)},
+                 {QStringLiteral("x̄1"), meanA},
+                 {QStringLiteral("x̄2"), meanB}});
+}
+
+Inference onePropZTest(double hypothesised, double successes, double count, Tail tail) {
+    if (count <= 0 || hypothesised <= 0 || hypothesised >= 1)
+        return {};
+    const double observed = successes / count;
+    const double z = (observed - hypothesised)
+        / std::sqrt(hypothesised * (1.0 - hypothesised) / count);
+    return make(QStringLiteral("1-PropZTest"),
+                {{QStringLiteral("z"), z},
+                 {QStringLiteral("p"), normalTailProbability(z, tail)},
+                 {QStringLiteral("p̂"), observed},
+                 {QStringLiteral("n"), count}});
+}
+
+Inference twoPropZTest(double successesA, double countA, double successesB, double countB,
+                       Tail tail) {
+    if (countA <= 0 || countB <= 0)
+        return {};
+    const double first = successesA / countA;
+    const double second = successesB / countB;
+    const double combined = (successesA + successesB) / (countA + countB);
+    const double standardError =
+        std::sqrt(combined * (1.0 - combined) * (1.0 / countA + 1.0 / countB));
+    if (standardError <= 0)
+        return {};
+    const double z = (first - second) / standardError;
+    return make(QStringLiteral("2-PropZTest"),
+                {{QStringLiteral("z"), z},
+                 {QStringLiteral("p"), normalTailProbability(z, tail)},
+                 {QStringLiteral("p̂1"), first},
+                 {QStringLiteral("p̂2"), second},
+                 {QStringLiteral("p̂"), combined}});
+}
+
+Inference goodnessOfFit(const std::vector<double> &observed, const std::vector<double> &expected,
+                        double degrees) {
+    if (observed.empty() || observed.size() != expected.size())
+        return {};
+    double statistic = 0;
+    for (size_t i = 0; i < observed.size(); ++i) {
+        if (expected[i] <= 0)
+            return {};
+        const double difference = observed[i] - expected[i];
+        statistic += difference * difference / expected[i];
+    }
+    if (degrees <= 0)
+        degrees = double(observed.size()) - 1;
+    return make(QStringLiteral("χ²GOF-Test"),
+                {{QStringLiteral("χ²"), statistic},
+                 {QStringLiteral("p"), 1.0 - special::chiSquareCdf(0, statistic, degrees)},
+                 {QStringLiteral("df"), degrees}});
+}
+
+Inference independenceTest(const std::vector<std::vector<double>> &table) {
+    if (table.size() < 2 || table.front().size() < 2)
+        return {};
+    const size_t rows = table.size();
+    const size_t columns = table.front().size();
+
+    std::vector<double> rowTotals(rows, 0.0);
+    std::vector<double> columnTotals(columns, 0.0);
+    double total = 0;
+    for (size_t r = 0; r < rows; ++r) {
+        if (table[r].size() != columns)
+            return {};
+        for (size_t c = 0; c < columns; ++c) {
+            rowTotals[r] += table[r][c];
+            columnTotals[c] += table[r][c];
+            total += table[r][c];
+        }
+    }
+    if (total <= 0)
+        return {};
+
+    double statistic = 0;
+    for (size_t r = 0; r < rows; ++r) {
+        for (size_t c = 0; c < columns; ++c) {
+            const double expected = rowTotals[r] * columnTotals[c] / total;
+            if (expected <= 0)
+                return {};
+            const double difference = table[r][c] - expected;
+            statistic += difference * difference / expected;
+        }
+    }
+    const double degrees = double(rows - 1) * double(columns - 1);
+    return make(QStringLiteral("χ²-Test"),
+                {{QStringLiteral("χ²"), statistic},
+                 {QStringLiteral("p"), 1.0 - special::chiSquareCdf(0, statistic, degrees)},
+                 {QStringLiteral("df"), degrees}});
+}
+
+Inference linearRegressionTTest(const std::vector<double> &x, const std::vector<double> &y,
+                                Tail tail) {
+    const size_t n = std::min(x.size(), y.size());
+    if (n < 3)
+        return {};
+    const Regression line = fit(Model::Linear, x, y);
+    if (!line.valid)
+        return {};
+
+    const double slope = line.coefficients[0];
+    const double intercept = line.coefficients[1];
+    double meanX = 0;
+    for (size_t i = 0; i < n; ++i)
+        meanX += x[i];
+    meanX /= double(n);
+
+    double residual = 0;
+    double spreadX = 0;
+    for (size_t i = 0; i < n; ++i) {
+        const double error = y[i] - (slope * x[i] + intercept);
+        residual += error * error;
+        spreadX += (x[i] - meanX) * (x[i] - meanX);
+    }
+    if (spreadX <= 0)
+        return {};
+    const double degrees = double(n) - 2;
+    const double standardError = std::sqrt(residual / degrees / spreadX);
+    if (standardError <= 0)
+        return {};
+    const double t = slope / standardError;
+    return make(QStringLiteral("LinRegTTest"),
+                {{QStringLiteral("t"), t},
+                 {QStringLiteral("p"), studentTailProbability(t, degrees, tail)},
+                 {QStringLiteral("df"), degrees},
+                 {QStringLiteral("a"), slope},
+                 {QStringLiteral("b"), intercept},
+                 {QStringLiteral("r²"), line.determination},
+                 {QStringLiteral("r"), line.correlation}});
+}
+
+Inference analysisOfVariance(const std::vector<std::vector<double>> &groups) {
+    if (groups.size() < 2)
+        return {};
+    double total = 0;
+    double count = 0;
+    for (const std::vector<double> &group : groups) {
+        if (group.empty())
+            return {};
+        for (double value : group) {
+            total += value;
+            count += 1;
+        }
+    }
+    const double grandMean = total / count;
+
+    double between = 0;
+    double within = 0;
+    for (const std::vector<double> &group : groups) {
+        double groupMean = 0;
+        for (double value : group)
+            groupMean += value;
+        groupMean /= double(group.size());
+        between += double(group.size()) * (groupMean - grandMean) * (groupMean - grandMean);
+        for (double value : group)
+            within += (value - groupMean) * (value - groupMean);
+    }
+
+    const double degreesBetween = double(groups.size()) - 1;
+    const double degreesWithin = count - double(groups.size());
+    if (degreesWithin <= 0 || within <= 0)
+        return {};
+    const double f = (between / degreesBetween) / (within / degreesWithin);
+    return make(QStringLiteral("ANOVA"),
+                {{QStringLiteral("F"), f},
+                 {QStringLiteral("p"), 1.0 - special::fCdf(0, f, degreesBetween, degreesWithin)},
+                 {QStringLiteral("Factor df"), degreesBetween},
+                 {QStringLiteral("Error df"), degreesWithin},
+                 {QStringLiteral("Factor MS"), between / degreesBetween},
+                 {QStringLiteral("Error MS"), within / degreesWithin}});
+}
+
+Inference zInterval(double deviation, double mean, double count, double level) {
+    if (deviation <= 0 || count <= 0 || level <= 0 || level >= 1)
+        return {};
+    const double critical = special::invNormal(1.0 - (1.0 - level) / 2.0, 0, 1);
+    const double margin = critical * deviation / std::sqrt(count);
+    return make(QStringLiteral("ZInterval"),
+                {{QStringLiteral("lower"), mean - margin},
+                 {QStringLiteral("upper"), mean + margin},
+                 {QStringLiteral("x̄"), mean},
+                 {QStringLiteral("ME"), margin},
+                 {QStringLiteral("n"), count}});
+}
+
+Inference tInterval(double mean, double sampleDeviation, double count, double level) {
+    if (sampleDeviation <= 0 || count <= 1 || level <= 0 || level >= 1)
+        return {};
+    const double degrees = count - 1;
+    const double critical = special::invStudent(1.0 - (1.0 - level) / 2.0, degrees);
+    const double margin = critical * sampleDeviation / std::sqrt(count);
+    return make(QStringLiteral("TInterval"),
+                {{QStringLiteral("lower"), mean - margin},
+                 {QStringLiteral("upper"), mean + margin},
+                 {QStringLiteral("x̄"), mean},
+                 {QStringLiteral("ME"), margin},
+                 {QStringLiteral("df"), degrees}});
+}
+
+Inference twoSampleTInterval(double meanA, double deviationA, double countA, double meanB,
+                             double deviationB, double countB, double level, bool pooled) {
+    if (countA <= 1 || countB <= 1 || level <= 0 || level >= 1)
+        return {};
+    double standardError = 0;
+    double degrees = 0;
+    if (pooled) {
+        const double pooledVariance =
+            ((countA - 1) * deviationA * deviationA + (countB - 1) * deviationB * deviationB)
+            / (countA + countB - 2);
+        standardError = std::sqrt(pooledVariance * (1.0 / countA + 1.0 / countB));
+        degrees = countA + countB - 2;
+    } else {
+        const double a = deviationA * deviationA / countA;
+        const double b = deviationB * deviationB / countB;
+        standardError = std::sqrt(a + b);
+        degrees = (a + b) * (a + b) / (a * a / (countA - 1) + b * b / (countB - 1));
+    }
+    const double critical = special::invStudent(1.0 - (1.0 - level) / 2.0, degrees);
+    const double margin = critical * standardError;
+    const double difference = meanA - meanB;
+    return make(QStringLiteral("2-SampTInt"),
+                {{QStringLiteral("lower"), difference - margin},
+                 {QStringLiteral("upper"), difference + margin},
+                 {QStringLiteral("df"), degrees},
+                 {QStringLiteral("ME"), margin}});
+}
+
+Inference onePropZInterval(double successes, double count, double level) {
+    if (count <= 0 || level <= 0 || level >= 1)
+        return {};
+    const double observed = successes / count;
+    const double critical = special::invNormal(1.0 - (1.0 - level) / 2.0, 0, 1);
+    const double margin = critical * std::sqrt(observed * (1.0 - observed) / count);
+    return make(QStringLiteral("1-PropZInt"),
+                {{QStringLiteral("lower"), observed - margin},
+                 {QStringLiteral("upper"), observed + margin},
+                 {QStringLiteral("p̂"), observed},
+                 {QStringLiteral("ME"), margin}});
+}
+
+Inference twoPropZInterval(double successesA, double countA, double successesB, double countB,
+                           double level) {
+    if (countA <= 0 || countB <= 0 || level <= 0 || level >= 1)
+        return {};
+    const double first = successesA / countA;
+    const double second = successesB / countB;
+    const double critical = special::invNormal(1.0 - (1.0 - level) / 2.0, 0, 1);
+    const double margin = critical
+        * std::sqrt(first * (1.0 - first) / countA + second * (1.0 - second) / countB);
+    const double difference = first - second;
+    return make(QStringLiteral("2-PropZInt"),
+                {{QStringLiteral("lower"), difference - margin},
+                 {QStringLiteral("upper"), difference + margin},
+                 {QStringLiteral("p̂1"), first},
+                 {QStringLiteral("p̂2"), second},
+                 {QStringLiteral("ME"), margin}});
 }
 
 }  // namespace stats

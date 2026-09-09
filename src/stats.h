@@ -68,6 +68,39 @@ struct Regression {
     bool hasCorrelation = false;
 };
 
+// One inferential procedure's answer: the statistic, its p value or interval,
+// and the supporting numbers, in the order the calculator prints them.
+struct Inference {
+    bool valid = false;
+    QString name;
+    std::vector<std::pair<QString, double>> values;
+};
+
+enum class Tail { TwoSided, Less, Greater };
+
+Inference zTest(double hypothesised, double deviation, double mean, double count, Tail tail);
+Inference tTest(double hypothesised, double mean, double sampleDeviation, double count, Tail tail);
+Inference twoSampleTTest(double meanA, double deviationA, double countA, double meanB,
+                         double deviationB, double countB, Tail tail, bool pooled);
+Inference twoSampleZTest(double deviationA, double deviationB, double meanA, double countA,
+                         double meanB, double countB, Tail tail);
+Inference onePropZTest(double hypothesised, double successes, double count, Tail tail);
+Inference twoPropZTest(double successesA, double countA, double successesB, double countB,
+                       Tail tail);
+Inference goodnessOfFit(const std::vector<double> &observed, const std::vector<double> &expected,
+                        double degrees);
+Inference independenceTest(const std::vector<std::vector<double>> &table);
+Inference linearRegressionTTest(const std::vector<double> &x, const std::vector<double> &y,
+                                Tail tail);
+Inference analysisOfVariance(const std::vector<std::vector<double>> &groups);
+Inference zInterval(double deviation, double mean, double count, double level);
+Inference tInterval(double mean, double sampleDeviation, double count, double level);
+Inference twoSampleTInterval(double meanA, double deviationA, double countA, double meanB,
+                             double deviationB, double countB, double level, bool pooled);
+Inference onePropZInterval(double successes, double count, double level);
+Inference twoPropZInterval(double successesA, double countA, double successesB, double countB,
+                           double level);
+
 OneVariable oneVariable(const std::vector<double> &values, const std::vector<double> &frequencies);
 TwoVariable twoVariable(const std::vector<double> &x, const std::vector<double> &y);
 Regression fit(Model model, const std::vector<double> &x, const std::vector<double> &y);

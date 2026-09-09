@@ -1564,3 +1564,249 @@ void Backend::watchOmarchyTheme() {
     if (QFile::exists(colorsPath))
         m_themeWatcher.addPath(colorsPath);
 }
+
+// --- Inferential statistics ------------------------------------------------
+
+namespace {
+QVariantMap field(const QString &key, const QString &label, const QString &type,
+                  const QVariant &fallback, const QStringList &options = {}) {
+    QVariantMap map;
+    map.insert(QStringLiteral("key"), key);
+    map.insert(QStringLiteral("label"), label);
+    map.insert(QStringLiteral("type"), type);
+    map.insert(QStringLiteral("default"), fallback);
+    if (!options.isEmpty())
+        map.insert(QStringLiteral("options"), options);
+    return map;
+}
+
+QVariantMap procedure(const QString &key, const QString &name, const QVariantList &fields) {
+    QVariantMap map;
+    map.insert(QStringLiteral("key"), key);
+    map.insert(QStringLiteral("name"), name);
+    map.insert(QStringLiteral("fields"), fields);
+    return map;
+}
+
+const QStringList &tailOptions() {
+    static const QStringList options = {QStringLiteral("≠"), QStringLiteral("<"),
+                                        QStringLiteral(">")};
+    return options;
+}
+
+const QStringList &yesNo() {
+    static const QStringList options = {QStringLiteral("No"), QStringLiteral("Yes")};
+    return options;
+}
+}  // namespace
+
+QVariantList Backend::inferenceProcedures() const {
+    const QVariant one = QStringLiteral("L1");
+    const QVariant two = QStringLiteral("L2");
+    QVariantList list;
+
+    list << procedure(QStringLiteral("ZTest"), QStringLiteral("Z-Test"),
+                      {field(QStringLiteral("mu"), QStringLiteral("μ₀"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("sigma"), QStringLiteral("σ"), QStringLiteral("number"), 1),
+                       field(QStringLiteral("list"), QStringLiteral("List"), QStringLiteral("list"), one),
+                       field(QStringLiteral("tail"), QStringLiteral("μ"), QStringLiteral("choice"), 0, tailOptions())});
+
+    list << procedure(QStringLiteral("TTest"), QStringLiteral("T-Test"),
+                      {field(QStringLiteral("mu"), QStringLiteral("μ₀"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("list"), QStringLiteral("List"), QStringLiteral("list"), one),
+                       field(QStringLiteral("tail"), QStringLiteral("μ"), QStringLiteral("choice"), 0, tailOptions())});
+
+    list << procedure(QStringLiteral("2SampTTest"), QStringLiteral("2-SampTTest"),
+                      {field(QStringLiteral("list1"), QStringLiteral("List1"), QStringLiteral("list"), one),
+                       field(QStringLiteral("list2"), QStringLiteral("List2"), QStringLiteral("list"), two),
+                       field(QStringLiteral("tail"), QStringLiteral("μ1"), QStringLiteral("choice"), 0, tailOptions()),
+                       field(QStringLiteral("pooled"), QStringLiteral("Pooled"), QStringLiteral("choice"), 0, yesNo())});
+
+    list << procedure(QStringLiteral("2SampZTest"), QStringLiteral("2-SampZTest"),
+                      {field(QStringLiteral("sigma1"), QStringLiteral("σ1"), QStringLiteral("number"), 1),
+                       field(QStringLiteral("sigma2"), QStringLiteral("σ2"), QStringLiteral("number"), 1),
+                       field(QStringLiteral("list1"), QStringLiteral("List1"), QStringLiteral("list"), one),
+                       field(QStringLiteral("list2"), QStringLiteral("List2"), QStringLiteral("list"), two),
+                       field(QStringLiteral("tail"), QStringLiteral("μ1"), QStringLiteral("choice"), 0, tailOptions())});
+
+    list << procedure(QStringLiteral("1PropZTest"), QStringLiteral("1-PropZTest"),
+                      {field(QStringLiteral("p0"), QStringLiteral("p₀"), QStringLiteral("number"), 0.5),
+                       field(QStringLiteral("x"), QStringLiteral("x"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("n"), QStringLiteral("n"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("tail"), QStringLiteral("prop"), QStringLiteral("choice"), 0, tailOptions())});
+
+    list << procedure(QStringLiteral("2PropZTest"), QStringLiteral("2-PropZTest"),
+                      {field(QStringLiteral("x1"), QStringLiteral("x1"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("n1"), QStringLiteral("n1"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("x2"), QStringLiteral("x2"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("n2"), QStringLiteral("n2"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("tail"), QStringLiteral("p1"), QStringLiteral("choice"), 0, tailOptions())});
+
+    list << procedure(QStringLiteral("GOF"), QStringLiteral("χ²GOF-Test"),
+                      {field(QStringLiteral("observed"), QStringLiteral("Observed"), QStringLiteral("list"), one),
+                       field(QStringLiteral("expected"), QStringLiteral("Expected"), QStringLiteral("list"), two),
+                       field(QStringLiteral("df"), QStringLiteral("df"), QStringLiteral("number"), 0)});
+
+    list << procedure(QStringLiteral("ChiSquare"), QStringLiteral("χ²-Test"),
+                      {field(QStringLiteral("matrix"), QStringLiteral("Observed"), QStringLiteral("matrix"),
+                             QStringLiteral("[A]"))});
+
+    list << procedure(QStringLiteral("LinRegTTest"), QStringLiteral("LinRegTTest"),
+                      {field(QStringLiteral("list1"), QStringLiteral("Xlist"), QStringLiteral("list"), one),
+                       field(QStringLiteral("list2"), QStringLiteral("Ylist"), QStringLiteral("list"), two),
+                       field(QStringLiteral("tail"), QStringLiteral("β"), QStringLiteral("choice"), 0, tailOptions())});
+
+    list << procedure(QStringLiteral("ANOVA"), QStringLiteral("ANOVA"),
+                      {field(QStringLiteral("list1"), QStringLiteral("List1"), QStringLiteral("list"), one),
+                       field(QStringLiteral("list2"), QStringLiteral("List2"), QStringLiteral("list"), two),
+                       field(QStringLiteral("list3"), QStringLiteral("List3"), QStringLiteral("list"),
+                             QString())});
+
+    list << procedure(QStringLiteral("ZInterval"), QStringLiteral("ZInterval"),
+                      {field(QStringLiteral("sigma"), QStringLiteral("σ"), QStringLiteral("number"), 1),
+                       field(QStringLiteral("list"), QStringLiteral("List"), QStringLiteral("list"), one),
+                       field(QStringLiteral("level"), QStringLiteral("C-Level"), QStringLiteral("number"), 0.95)});
+
+    list << procedure(QStringLiteral("TInterval"), QStringLiteral("TInterval"),
+                      {field(QStringLiteral("list"), QStringLiteral("List"), QStringLiteral("list"), one),
+                       field(QStringLiteral("level"), QStringLiteral("C-Level"), QStringLiteral("number"), 0.95)});
+
+    list << procedure(QStringLiteral("2SampTInt"), QStringLiteral("2-SampTInt"),
+                      {field(QStringLiteral("list1"), QStringLiteral("List1"), QStringLiteral("list"), one),
+                       field(QStringLiteral("list2"), QStringLiteral("List2"), QStringLiteral("list"), two),
+                       field(QStringLiteral("level"), QStringLiteral("C-Level"), QStringLiteral("number"), 0.95),
+                       field(QStringLiteral("pooled"), QStringLiteral("Pooled"), QStringLiteral("choice"), 0, yesNo())});
+
+    list << procedure(QStringLiteral("1PropZInt"), QStringLiteral("1-PropZInt"),
+                      {field(QStringLiteral("x"), QStringLiteral("x"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("n"), QStringLiteral("n"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("level"), QStringLiteral("C-Level"), QStringLiteral("number"), 0.95)});
+
+    list << procedure(QStringLiteral("2PropZInt"), QStringLiteral("2-PropZInt"),
+                      {field(QStringLiteral("x1"), QStringLiteral("x1"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("n1"), QStringLiteral("n1"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("x2"), QStringLiteral("x2"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("n2"), QStringLiteral("n2"), QStringLiteral("number"), 0),
+                       field(QStringLiteral("level"), QStringLiteral("C-Level"), QStringLiteral("number"), 0.95)});
+
+    return list;
+}
+
+QVariantList Backend::runInference(const QString &key, const QVariantMap &values) {
+    auto number = [&](const QString &name, double fallback = 0.0) {
+        bool ok = false;
+        const double value = values.value(name).toDouble(&ok);
+        return ok ? value : fallback;
+    };
+    auto listOf = [&](const QString &name) {
+        return listValues(values.value(name).toString());
+    };
+    auto tailOf = [&](const QString &name) {
+        return stats::Tail(std::clamp(values.value(name).toInt(), 0, 2));
+    };
+    auto summaryOf = [&](const QString &name) {
+        return stats::oneVariable(listOf(name), {});
+    };
+
+    stats::Inference result;
+    if (key == QStringLiteral("ZTest")) {
+        const stats::OneVariable summary = summaryOf(QStringLiteral("list"));
+        result = stats::zTest(number(QStringLiteral("mu")), number(QStringLiteral("sigma"), 1),
+                              summary.mean, summary.count, tailOf(QStringLiteral("tail")));
+    } else if (key == QStringLiteral("TTest")) {
+        const stats::OneVariable summary = summaryOf(QStringLiteral("list"));
+        result = stats::tTest(number(QStringLiteral("mu")), summary.mean,
+                              summary.sampleDeviation, summary.count,
+                              tailOf(QStringLiteral("tail")));
+    } else if (key == QStringLiteral("2SampTTest")) {
+        const stats::OneVariable a = summaryOf(QStringLiteral("list1"));
+        const stats::OneVariable b = summaryOf(QStringLiteral("list2"));
+        result = stats::twoSampleTTest(a.mean, a.sampleDeviation, a.count, b.mean,
+                                       b.sampleDeviation, b.count, tailOf(QStringLiteral("tail")),
+                                       values.value(QStringLiteral("pooled")).toInt() == 1);
+    } else if (key == QStringLiteral("2SampZTest")) {
+        const stats::OneVariable a = summaryOf(QStringLiteral("list1"));
+        const stats::OneVariable b = summaryOf(QStringLiteral("list2"));
+        result = stats::twoSampleZTest(number(QStringLiteral("sigma1"), 1),
+                                       number(QStringLiteral("sigma2"), 1), a.mean, a.count,
+                                       b.mean, b.count, tailOf(QStringLiteral("tail")));
+    } else if (key == QStringLiteral("1PropZTest")) {
+        result = stats::onePropZTest(number(QStringLiteral("p0"), 0.5), number(QStringLiteral("x")),
+                                     number(QStringLiteral("n")), tailOf(QStringLiteral("tail")));
+    } else if (key == QStringLiteral("2PropZTest")) {
+        result = stats::twoPropZTest(number(QStringLiteral("x1")), number(QStringLiteral("n1")),
+                                     number(QStringLiteral("x2")), number(QStringLiteral("n2")),
+                                     tailOf(QStringLiteral("tail")));
+    } else if (key == QStringLiteral("GOF")) {
+        result = stats::goodnessOfFit(listOf(QStringLiteral("observed")),
+                                      listOf(QStringLiteral("expected")),
+                                      number(QStringLiteral("df")));
+    } else if (key == QStringLiteral("ChiSquare")) {
+        std::vector<std::vector<double>> table;
+        const QString name = values.value(QStringLiteral("matrix")).toString();
+        if (m_context.has(name)) {
+            const calc::Value value = m_context.value(name);
+            if (value.isMatrix()) {
+                const calc::Matrix &matrix = value.matrix();
+                for (int r = 0; r < matrix.rows; ++r) {
+                    std::vector<double> row;
+                    for (int c = 0; c < matrix.cols; ++c)
+                        row.push_back(matrix.at(r, c).real());
+                    table.push_back(row);
+                }
+            }
+        }
+        result = stats::independenceTest(table);
+    } else if (key == QStringLiteral("LinRegTTest")) {
+        result = stats::linearRegressionTTest(listOf(QStringLiteral("list1")),
+                                              listOf(QStringLiteral("list2")),
+                                              tailOf(QStringLiteral("tail")));
+    } else if (key == QStringLiteral("ANOVA")) {
+        std::vector<std::vector<double>> groups;
+        for (const QString &name : {QStringLiteral("list1"), QStringLiteral("list2"),
+                                    QStringLiteral("list3")}) {
+            const std::vector<double> group = listOf(name);
+            if (!group.empty())
+                groups.push_back(group);
+        }
+        result = stats::analysisOfVariance(groups);
+    } else if (key == QStringLiteral("ZInterval")) {
+        const stats::OneVariable summary = summaryOf(QStringLiteral("list"));
+        result = stats::zInterval(number(QStringLiteral("sigma"), 1), summary.mean, summary.count,
+                                  number(QStringLiteral("level"), 0.95));
+    } else if (key == QStringLiteral("TInterval")) {
+        const stats::OneVariable summary = summaryOf(QStringLiteral("list"));
+        result = stats::tInterval(summary.mean, summary.sampleDeviation, summary.count,
+                                  number(QStringLiteral("level"), 0.95));
+    } else if (key == QStringLiteral("2SampTInt")) {
+        const stats::OneVariable a = summaryOf(QStringLiteral("list1"));
+        const stats::OneVariable b = summaryOf(QStringLiteral("list2"));
+        result = stats::twoSampleTInterval(a.mean, a.sampleDeviation, a.count, b.mean,
+                                           b.sampleDeviation, b.count,
+                                           number(QStringLiteral("level"), 0.95),
+                                           values.value(QStringLiteral("pooled")).toInt() == 1);
+    } else if (key == QStringLiteral("1PropZInt")) {
+        result = stats::onePropZInterval(number(QStringLiteral("x")), number(QStringLiteral("n")),
+                                         number(QStringLiteral("level"), 0.95));
+    } else if (key == QStringLiteral("2PropZInt")) {
+        result = stats::twoPropZInterval(number(QStringLiteral("x1")), number(QStringLiteral("n1")),
+                                         number(QStringLiteral("x2")), number(QStringLiteral("n2")),
+                                         number(QStringLiteral("level"), 0.95));
+    }
+
+    QVariantList rows;
+    if (!result.valid) {
+        QVariantMap row;
+        row.insert(QStringLiteral("label"), QStringLiteral("ERR"));
+        row.insert(QStringLiteral("value"), QStringLiteral("check the inputs"));
+        rows.append(row);
+        return rows;
+    }
+    for (const auto &pair : result.values) {
+        QVariantMap row;
+        row.insert(QStringLiteral("label"), pair.first);
+        row.insert(QStringLiteral("value"), formatValue(pair.second));
+        rows.append(row);
+    }
+    return rows;
+}

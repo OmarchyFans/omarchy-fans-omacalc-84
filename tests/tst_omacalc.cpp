@@ -526,6 +526,67 @@ private slots:
         QVERIFY(curve.determination > 0.999);
     }
 
+
+    void runsTheInferenceProcedures() {
+        const stats::Inference z = stats::zTest(100, 15, 106, 25, stats::Tail::TwoSided);
+        QVERIFY(z.valid);
+        QVERIFY(std::abs(z.values[0].second - 2.0) < 1e-12);
+        QVERIFY(std::abs(z.values[1].second - 0.045500263896) < 1e-10);
+
+        const stats::Inference t = stats::tTest(100, 106, 15, 25, stats::Tail::TwoSided);
+        QVERIFY(std::abs(t.values[0].second - 2.0) < 1e-12);
+        QVERIFY(std::abs(t.values[1].second - 0.056939849937) < 1e-9);
+        QVERIFY(std::abs(t.values[2].second - 24.0) < 1e-12);
+
+        const stats::Inference proportion = stats::onePropZTest(0.5, 60, 100, stats::Tail::TwoSided);
+        QVERIFY(std::abs(proportion.values[0].second - 2.0) < 1e-12);
+        QVERIFY(std::abs(proportion.values[1].second - 0.045500263896) < 1e-10);
+
+        // A two-by-two table where every expected count is 25.
+        const stats::Inference table = stats::independenceTest({{20, 30}, {30, 20}});
+        QVERIFY(std::abs(table.values[0].second - 4.0) < 1e-12);
+        QVERIFY(std::abs(table.values[1].second - 0.045500263896) < 1e-9);
+        QVERIFY(std::abs(table.values[2].second - 1.0) < 1e-12);
+
+        const stats::Inference variance =
+            stats::analysisOfVariance({{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+        QVERIFY(std::abs(variance.values[0].second - 27.0) < 1e-9);
+        QVERIFY(std::abs(variance.values[2].second - 2.0) < 1e-12);
+        QVERIFY(std::abs(variance.values[3].second - 6.0) < 1e-12);
+
+        const stats::Inference slope =
+            stats::linearRegressionTTest({1, 2, 3, 4, 5}, {2, 4, 5, 4, 5}, stats::Tail::TwoSided);
+        QVERIFY(std::abs(slope.values[0].second - 2.121320343560) < 1e-9);
+        QVERIFY(std::abs(slope.values[1].second - 0.124027062658) < 1e-10);
+        QVERIFY(std::abs(slope.values[3].second - 0.6) < 1e-12);
+
+        const stats::Inference interval = stats::tInterval(10, 2, 25, 0.95);
+        QVERIFY(std::abs(interval.values[0].second - (10.0 - 0.825559)) < 1e-5);
+        QVERIFY(std::abs(interval.values[1].second - (10.0 + 0.825559)) < 1e-5);
+    }
+
+    void drivesInferenceThroughTheBackend() {
+        Backend calculator;
+        calculator.clearList(QStringLiteral("L1"));
+        const double sample[] = {2, 4, 4, 4, 5, 5, 7, 9};
+        for (int i = 0; i < 8; ++i)
+            calculator.setListCell(QStringLiteral("L1"), i, QString::number(sample[i]));
+
+        const QVariantList procedures = calculator.inferenceProcedures();
+        QVERIFY(procedures.size() >= 15);
+
+        QVariantMap values;
+        values.insert(QStringLiteral("mu"), 4);
+        values.insert(QStringLiteral("list"), QStringLiteral("L1"));
+        values.insert(QStringLiteral("tail"), 0);
+        const QVariantList rows = calculator.runInference(QStringLiteral("TTest"), values);
+        QCOMPARE(rows.at(0).toMap().value("label").toString(), QStringLiteral("t"));
+        // The sample mean is 5 with a sample deviation of √(32/7) over eight values.
+        const double expected = (5.0 - 4.0) / (std::sqrt(32.0 / 7.0) / std::sqrt(8.0));
+        QCOMPARE(rows.at(0).toMap().value("value").toString(),
+                 calc::formatReal(expected, calc::Settings()));
+    }
+
     void loadsCurrentOmarchyTheme() {
         QTemporaryDir homeDirectory;
         QVERIFY(homeDirectory.isValid());

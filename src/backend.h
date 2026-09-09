@@ -158,6 +158,10 @@ public:
     Q_INVOKABLE QVariantList twoVariableStats(const QString &xList, const QString &yList);
     Q_INVOKABLE QVariantList regression(int model, const QString &xList, const QString &yList,
                                         int storeToFunction);
+    // The STAT TESTS menu describes its own parameters so one screen can drive
+    // every procedure.
+    Q_INVOKABLE QVariantList inferenceProcedures() const;
+    Q_INVOKABLE QVariantList runInference(const QString &key, const QVariantMap &values);
     QVariantList plots() const;
     Q_INVOKABLE void setPlot(int index, bool enabled, int type, const QString &xList,
                              const QString &yList, int mark);

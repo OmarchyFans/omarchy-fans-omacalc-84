@@ -148,7 +148,7 @@ ApplicationWindow {
         entry("LinReg(ax+b)", "r:0"), entry("LinReg(a+bx)", "r:1"), entry("QuadReg", "r:2"),
         entry("CubicReg", "r:3"), entry("QuartReg", "r:4"), entry("LnReg", "r:5"),
         entry("ExpReg", "r:6"), entry("PwrReg", "r:7"), entry("Logistic", "r:8"),
-        entry("SinReg", "r:9"), entry("Med-Med", "r:10")
+        entry("SinReg", "r:9"), entry("Med-Med", "r:10"), entry("TESTS", "s:9")
     ]
 
     readonly property var varsMenu: [
@@ -495,7 +495,7 @@ ApplicationWindow {
 
             Text {
                 text: ["HOME", "Y=", "WINDOW", "GRAPH", "TABLE", "LISTS", "STATS", "MATRIX",
-                       "MODE"][win.screen]
+                       "MODE", "TESTS"][win.screen]
                 color: win.accentColor
                 font.family: "iA Writer Mono S"
                 font.bold: true
@@ -536,6 +536,7 @@ ApplicationWindow {
                 ResultsScreen { id: results; app: win }
                 MatrixEditor { app: win }
                 ModeScreen { app: win }
+                TestsScreen { app: win }
             }
 
             MenuOverlay { id: menuOverlay; app: win }

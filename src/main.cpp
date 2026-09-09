@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
                                      QStringLiteral("window"), QStringLiteral("graph"),
                                      QStringLiteral("table"),  QStringLiteral("lists"),
                                      QStringLiteral("stats"),  QStringLiteral("matrix"),
-                                     QStringLiteral("mode")};
+                                     QStringLiteral("mode"),  QStringLiteral("tests")};
     const int screenFlag = arguments.indexOf(QStringLiteral("--screen"));
     if (screenFlag >= 0 && screenFlag + 1 < arguments.size()) {
         const int named = screenNames.indexOf(arguments.at(screenFlag + 1));
