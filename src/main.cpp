@@ -87,6 +87,16 @@ int main(int argc, char *argv[]) {
             initialScreen = named;
     }
     engine.rootContext()->setContextProperty(QStringLiteral("initialScreen"), initialScreen);
+
+    // --eval works the calculator from the command line: each expression is
+    // entered as if it had been typed, and the answers are waiting on the home
+    // screen when the window opens.
+    for (int i = 0; i + 1 < arguments.size(); ++i) {
+        if (arguments.at(i) != QStringLiteral("--eval"))
+            continue;
+        const QVariantMap entry = backend.submit(arguments.at(i + 1));
+        qInfo().noquote() << entry.value(QStringLiteral("answer")).toString();
+    }
     const int screenshotFlag = arguments.indexOf(QStringLiteral("--screenshot"));
     if (screenshotFlag >= 0 && screenshotFlag + 1 < arguments.size())
         screenshotPath = arguments.at(screenshotFlag + 1);

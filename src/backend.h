@@ -48,6 +48,7 @@ class Backend : public QObject {
     Q_PROPERTY(bool connectedPlot READ connectedPlot WRITE setConnectedPlot NOTIFY settingsChanged)
     Q_PROPERTY(bool showGrid READ showGrid WRITE setShowGrid NOTIFY settingsChanged)
     Q_PROPERTY(bool showAxes READ showAxes WRITE setShowAxes NOTIFY settingsChanged)
+    Q_PROPERTY(bool hardwareSkin READ hardwareSkin WRITE setHardwareSkin NOTIFY settingsChanged)
 
     Q_PROPERTY(QVariantList functions READ functions NOTIFY functionsChanged)
     Q_PROPERTY(QVariantMap window READ window NOTIFY windowChanged)
@@ -101,6 +102,8 @@ public:
     void setShowGrid(bool show);
     bool showAxes() const { return m_showAxes; }
     void setShowAxes(bool show);
+    bool hardwareSkin() const { return m_hardwareSkin; }
+    void setHardwareSkin(bool hardware);
 
     // --- Y= editor ---------------------------------------------------------
     QVariantList functions() const;
@@ -252,6 +255,7 @@ private:
     bool m_connectedPlot = true;
     bool m_showGrid = false;
     bool m_showAxes = true;
+    bool m_hardwareSkin = true;
 
     double m_tableStart = 0;
     double m_tableStep = 1;

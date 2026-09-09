@@ -18,9 +18,45 @@ ApplicationWindow {
     // inside the item would resolve to the item's own property instead.
     readonly property var calculator: backend
     readonly property bool darkMode: backend.darkMode
-    readonly property color pageColor: backend.themeBackground
-    readonly property color inkColor: backend.themeForeground
-    readonly property color accentColor: backend.themeAccent
+    // Two faces: the moulded case with its monochrome screen, or the flat one
+    // that follows the desktop theme.
+    readonly property bool hardware: backend.hardwareSkin
+
+    readonly property color caseColor: hardware ? "#17181c" : backend.themeBackground
+    readonly property color bezelColor: hardware ? "#0a0b0d" : backend.themeBackground
+    readonly property color caseInk: hardware ? "#8f929b" : mutedColor
+    readonly property color caseTitle: hardware ? "#d6d8de" : backend.themeAccent
+    readonly property color secondColor: hardware ? "#4b8fd6" : backend.themeAccent
+    readonly property color alphaColor: hardware ? "#63b463" : mutedColor
+
+    // Inside the screen everything is drawn in the display's own two colours,
+    // so every screen and the grapher pick these up without knowing about it.
+    readonly property color pageColor: hardware ? "#b3c49a" : backend.themeBackground
+    readonly property color inkColor: hardware ? "#16200f" : backend.themeForeground
+    readonly property color accentColor: hardware ? "#2c4726" : backend.themeAccent
+
+    function keyBase(kind, label) {
+        if (hardware) {
+            if (label === "2nd") return "#3d7fc4";
+            if (label === "ALPHA") return "#4e9c56";
+            if (kind === "number") return "#4a4b51";
+            if (kind === "operator") return "#26272b";
+            if (kind === "enter") return "#4a4b51";
+            if (kind === "menu") return "#3d3e44";
+            return "#313237";
+        }
+        var lift = kind === "operator" ? 0.16 : (kind === "menu" ? 0.11
+                 : (kind === "function" ? 0.09 : 0.05));
+        if (kind === "enter")
+            return backend.themeForeground;
+        return mixColors(backend.themeBackground, backend.themeForeground, lift);
+    }
+
+    function keyInk(kind) {
+        if (hardware)
+            return "#f4f4f2";
+        return kind === "enter" ? backend.themeBackground : backend.themeForeground;
+    }
     // Every size in the interface is expressed at the 470 × 810 design size;
     // resizing the window scales the whole face with it.
     readonly property real uiScale: Math.min(width / 470, height / 810)
@@ -454,6 +490,17 @@ ApplicationWindow {
         key("ENTER", "c:enter", "c:entry", "", "ENTRY", "enter")
     ]
 
+    // The keypad is laid out in the order the case prints it, with the arrow
+    // cluster sitting across two rows on the right.
+    readonly property var keysTop: keypad.slice(0, 5)
+    readonly property var keysSecondRow: keypad.slice(5, 8)
+    readonly property var keysThirdRow: keypad.slice(10, 13)
+    readonly property var keysRest: keypad.slice(15)
+    readonly property var keyLeft: keypad[8]
+    readonly property var keyRight: keypad[9]
+    readonly property var keyUp: keypad[13]
+    readonly property var keyDown: keypad[14]
+
     Connections {
         target: backend
 
@@ -469,7 +516,7 @@ ApplicationWindow {
 
     Material.theme: darkMode ? Material.Dark : Material.Light
     Material.accent: accentColor
-    color: pageColor
+    color: caseColor
 
     Shortcut {
         sequences: ["Ctrl+C", "Meta+C"]
@@ -490,7 +537,7 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Math.round(12 * win.uiScale)
-        spacing: Math.round(8 * win.uiScale)
+        spacing: Math.round(10 * win.uiScale)
 
         // Status line: which screen, and what the modes are set to.
         RowLayout {
@@ -498,37 +545,66 @@ ApplicationWindow {
             spacing: Math.round(8 * win.uiScale)
 
             Text {
-                text: ["HOME", "Y=", "WINDOW", "GRAPH", "TABLE", "LISTS", "STATS", "MATRIX",
-                       "MODE", "TESTS"][win.screen]
-                color: win.accentColor
+                text: "omacalc"
+                color: win.caseTitle
                 font.family: "iA Writer Mono S"
                 font.bold: true
-                font.pixelSize: Math.round(12 * win.uiScale)
+                font.pixelSize: Math.round(13 * win.uiScale)
+            }
+            Text {
+                text: ["HOME", "Y=", "WINDOW", "GRAPH", "TABLE", "LISTS", "STATS", "MATRIX",
+                       "MODE", "TESTS"][win.screen]
+                color: win.caseInk
+                font.family: "iA Writer Mono S"
+                font.pixelSize: Math.round(11 * win.uiScale)
             }
             Item { Layout.fillWidth: true }
             Text {
-                text: (win.secondActive ? "2nd " : "") + (win.alphaActive ? "A " : "")
-                      + ["RAD", "DEG"][backend.angleMode] + " "
+                text: win.secondActive ? "2nd" : ""
+                color: win.secondColor
+                font.family: "iA Writer Mono S"
+                font.bold: true
+                font.pixelSize: Math.round(11 * win.uiScale)
+            }
+            Text {
+                text: win.alphaActive ? "A" : ""
+                color: win.alphaColor
+                font.family: "iA Writer Mono S"
+                font.bold: true
+                font.pixelSize: Math.round(11 * win.uiScale)
+            }
+            Text {
+                text: ["RAD", "DEG"][backend.angleMode] + " "
                       + ["FUNC", "PAR", "POL", "SEQ"][backend.graphMode]
                       + (backend.complexMode > 0 ? " a+bi" : "")
-                color: win.mutedColor
+                color: win.caseInk
                 font.family: "iA Writer Mono S"
-                font.pixelSize: Math.round(12 * win.uiScale)
+                font.pixelSize: Math.round(11 * win.uiScale)
             }
         }
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.round(parent.height * 0.42)
-            color: win.mixColors(win.pageColor, win.inkColor, 0.04)
-            border.width: 1
+            Layout.preferredHeight: Math.round(parent.height * 0.40)
+            color: win.hardware ? win.bezelColor
+                                : win.mixColors(win.pageColor, win.inkColor, 0.04)
+            border.width: win.hardware ? 0 : 1
             border.color: win.mixColors(win.pageColor, win.inkColor, 0.14)
-            radius: Math.round(6 * win.uiScale)
+            radius: Math.round(8 * win.uiScale)
             clip: true
+
+            // The glass itself, inset into the case.
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: win.hardware ? Math.round(7 * win.uiScale) : 0
+                color: win.pageColor
+                radius: Math.round(3 * win.uiScale)
+                visible: win.hardware
+            }
 
             StackLayout {
                 anchors.fill: parent
-                anchors.margins: Math.round(8 * win.uiScale)
+                anchors.margins: Math.round((win.hardware ? 15 : 8) * win.uiScale)
                 currentIndex: win.screen
 
                 HomeScreen { id: homeScreen; app: win }
@@ -547,28 +623,120 @@ ApplicationWindow {
         }
 
         GridLayout {
+            id: keypadGrid
             Layout.fillWidth: true
             Layout.fillHeight: true
             columns: 5
-            rowSpacing: Math.round(5 * win.uiScale)
-            columnSpacing: Math.round(5 * win.uiScale)
+            rowSpacing: Math.round(17 * win.uiScale)
+            columnSpacing: Math.round(6 * win.uiScale)
+
+            component Key: CalcButton {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                secondColor: win.secondColor
+                alphaColor: win.alphaColor
+                uiScale: win.uiScale
+            }
 
             Repeater {
-                model: win.keypad
-
-                CalcButton {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                model: win.keysTop
+                Key {
                     label: modelData.label
                     secondLabel: modelData.secondLabel
                     alphaLabel: modelData.alpha
-                    kind: modelData.kind
+                    baseColor: win.keyBase(modelData.kind, modelData.label)
+                    textColor: win.keyInk(modelData.kind)
+                    onActivated: win.pressKey(modelData)
+                }
+            }
+
+            Repeater {
+                model: win.keysSecondRow
+                Key {
+                    label: modelData.label
+                    secondLabel: modelData.secondLabel
+                    alphaLabel: modelData.alpha
+                    baseColor: win.keyBase(modelData.kind, modelData.label)
+                    textColor: win.keyInk(modelData.kind)
                     highlighted: (modelData.label === "2nd" && win.secondActive)
                                  || (modelData.label === "ALPHA" && win.alphaActive)
-                    pageColor: win.pageColor
-                    inkColor: win.inkColor
-                    accentColor: win.accentColor
+                    onActivated: win.pressKey(modelData)
+                }
+            }
+
+            // The four arrows sit in a ring, the way they do on the case.
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.rowSpan: 2
+                Layout.columnSpan: 2
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, parent.height) * 0.98
+                    height: width
+                    radius: width / 2
+                    color: win.hardware ? "#202127" : "transparent"
+                }
+
+                component Arrow: CalcButton {
+                    baseColor: win.keyBase("function", "")
+                    textColor: win.keyInk("function")
                     uiScale: win.uiScale
+                    width: Math.min(parent.width, parent.height) * 0.34
+                    height: width * 0.86
+                }
+
+                Arrow {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    label: win.keyUp.label
+                    onActivated: win.pressKey(win.keyUp)
+                }
+                Arrow {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: Math.round(parent.width * 0.08)
+                    label: win.keyLeft.label
+                    onActivated: win.pressKey(win.keyLeft)
+                }
+                Arrow {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right
+                    anchors.rightMargin: Math.round(parent.width * 0.08)
+                    label: win.keyRight.label
+                    onActivated: win.pressKey(win.keyRight)
+                }
+                Arrow {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    label: win.keyDown.label
+                    onActivated: win.pressKey(win.keyDown)
+                }
+            }
+
+            Repeater {
+                model: win.keysThirdRow
+                Key {
+                    label: modelData.label
+                    secondLabel: modelData.secondLabel
+                    alphaLabel: modelData.alpha
+                    baseColor: win.keyBase(modelData.kind, modelData.label)
+                    textColor: win.keyInk(modelData.kind)
+                    highlighted: (modelData.label === "2nd" && win.secondActive)
+                                 || (modelData.label === "ALPHA" && win.alphaActive)
+                    onActivated: win.pressKey(modelData)
+                }
+            }
+
+            Repeater {
+                model: win.keysRest
+                Key {
+                    label: modelData.label
+                    secondLabel: modelData.secondLabel
+                    alphaLabel: modelData.alpha
+                    baseColor: win.keyBase(modelData.kind, modelData.label)
+                    textColor: win.keyInk(modelData.kind)
                     onActivated: win.pressKey(modelData)
                 }
             }

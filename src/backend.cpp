@@ -107,6 +107,7 @@ Backend::Backend(QObject *parent) : QObject(parent) {
     m_connectedPlot = settings.value(QStringLiteral("connected"), true).toBool();
     m_showGrid = settings.value(QStringLiteral("grid"), false).toBool();
     m_showAxes = settings.value(QStringLiteral("axes"), true).toBool();
+    m_hardwareSkin = settings.value(QStringLiteral("hardware"), true).toBool();
     m_window.xMin = settings.value(QStringLiteral("xMin"), -10.0).toDouble();
     m_window.xMax = settings.value(QStringLiteral("xMax"), 10.0).toDouble();
     m_window.xScale = settings.value(QStringLiteral("xScale"), 1.0).toDouble();
@@ -280,6 +281,14 @@ void Backend::setShowGrid(bool show) {
         return;
     m_showGrid = show;
     writeSetting(QStringLiteral("grid"), show);
+    emit settingsChanged();
+}
+
+void Backend::setHardwareSkin(bool hardware) {
+    if (m_hardwareSkin == hardware)
+        return;
+    m_hardwareSkin = hardware;
+    writeSetting(QStringLiteral("hardware"), hardware);
     emit settingsChanged();
 }
 

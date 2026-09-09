@@ -1,18 +1,19 @@
 import QtQuick
 
-// One keypad key. The small text above the cap is what the key does after
-// 2nd (left) or ALPHA (right), the way the labels are printed on the case.
+// One key. The small text above the cap is what the key does after 2nd or
+// ALPHA, printed in the same blue and green as the legends on the case.
 Rectangle {
     id: control
 
     property string label
     property string secondLabel
     property string alphaLabel
-    property string kind: "number"  // number, operator, function, menu, enter, modifier
+    property color baseColor: "#34353a"
+    property color textColor: "#f4f4f2"
+    property color secondColor: "#4b8fd6"
+    property color alphaColor: "#63b463"
     property bool highlighted: false
-    property color pageColor: "#101010"
-    property color inkColor: "#eeeeee"
-    property color accentColor: "#5584aa"
+    property bool wide: false
     property real uiScale: 1
 
     signal activated()
@@ -22,72 +23,65 @@ Rectangle {
     Accessible.name: label
     Accessible.onPressAction: activated()
 
-    function mixColors(base, tint, amount) {
-        return Qt.rgba(
-            base.r + (tint.r - base.r) * amount,
-            base.g + (tint.g - base.g) * amount,
-            base.b + (tint.b - base.b) * amount, 1);
+    function lift(color, amount) {
+        return Qt.rgba(color.r + (1 - color.r) * amount,
+                       color.g + (1 - color.g) * amount,
+                       color.b + (1 - color.b) * amount, 1);
     }
 
-    readonly property real restingLift: {
-        if (kind === "operator") return 0.16;
-        if (kind === "menu") return 0.11;
-        if (kind === "function") return 0.09;
-        return 0.05;
-    }
-    readonly property real activeLift: restingLift
-        + (hitArea.pressed ? 0.09 : (hitArea.containsMouse ? 0.045 : 0))
-
-    radius: Math.min(10 * uiScale, height * 0.22)
+    radius: Math.max(3, Math.round(Math.min(height * 0.3, 9 * uiScale)))
     color: {
-        if (highlighted)
-            return accentColor;
-        if (kind === "enter")
-            return mixColors(inkColor, pageColor, hitArea.pressed ? 0.22 : (hitArea.containsMouse ? 0.1 : 0));
-        return mixColors(pageColor, inkColor, activeLift);
+        var base = highlighted ? lift(baseColor, 0.25) : baseColor;
+        if (hitArea.pressed)
+            return Qt.darker(base, 1.25);
+        if (hitArea.containsMouse)
+            return lift(base, 0.09);
+        return base;
     }
-    border.width: kind === "number" ? 1 : 0
-    border.color: mixColors(pageColor, inkColor, 0.13)
 
-    // The printed 2nd and ALPHA legends sit above the key itself.
+    // A thin lit top edge and a darker floor give the cap its moulded look.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: parent.radius * 0.5
+        height: Math.max(1, Math.round(parent.height * 0.06))
+        radius: height / 2
+        color: control.lift(control.color, 0.16)
+        visible: !hitArea.pressed
+    }
+
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: Math.round(2 * control.uiScale)
-        spacing: Math.round(4 * control.uiScale)
+        anchors.bottom: parent.top
+        anchors.bottomMargin: Math.round(2 * control.uiScale)
+        spacing: Math.round(5 * control.uiScale)
         visible: control.secondLabel !== "" || control.alphaLabel !== ""
 
         Text {
             text: control.secondLabel
-            color: control.accentColor
+            color: control.secondColor
             font.family: "iA Writer Mono S"
-            font.pixelSize: Math.max(7, Math.round(control.height * 0.19))
+            font.pixelSize: Math.max(6, Math.round(control.height * 0.27))
         }
         Text {
             text: control.alphaLabel
-            color: control.mixColors(control.pageColor, control.inkColor, 0.55)
+            color: control.alphaColor
             font.family: "iA Writer Mono S"
-            font.pixelSize: Math.max(7, Math.round(control.height * 0.19))
+            font.pixelSize: Math.max(6, Math.round(control.height * 0.27))
         }
     }
 
     Text {
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: (control.secondLabel !== "" || control.alphaLabel !== "")
-            ? Math.round(control.height * 0.09) : 0
-        width: parent.width - 6
+        width: parent.width - Math.round(4 * control.uiScale)
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
         text: control.label
-        color: {
-            if (control.highlighted) return control.pageColor;
-            if (control.kind === "enter") return control.pageColor;
-            return control.inkColor;
-        }
+        color: control.textColor
         font.family: "iA Writer Mono S"
-        font.bold: control.kind === "enter" || control.kind === "modifier"
-        font.pixelSize: Math.round(Math.min(control.height * 0.36,
-                                            control.width / Math.max(2.2, control.label.length * 0.62)))
+        font.pixelSize: Math.round(Math.min(control.height * 0.42,
+                                            control.width / Math.max(2.0, control.label.length * 0.66)))
     }
 
     MouseArea {

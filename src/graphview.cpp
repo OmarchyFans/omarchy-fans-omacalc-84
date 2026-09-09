@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPainterPath>
 
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -10,9 +11,8 @@ namespace {
 // equations stay apart from one another and still sit in the theme.
 QColor colorForIndex(const QColor &accent, int index) {
     const int hue = (accent.hue() < 0 ? 210 : accent.hue()) + index * 36;
-    QColor color = QColor::fromHsv(hue % 360, std::max(120, accent.saturation()),
-                                   std::max(180, accent.value()));
-    return color;
+    return QColor::fromHsv(hue % 360, std::max(120, accent.saturation()),
+                           std::clamp(accent.value(), 70, 255));
 }
 
 bool finitePoint(const QPointF &point) {

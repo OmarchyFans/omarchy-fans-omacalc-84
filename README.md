@@ -1,14 +1,14 @@
 # Omacalc
 
-A graphing calculator built with Qt Quick and C++ that automatically follows
-the Omarchy theme and system dark/light mode.
+A graphing calculator built with Qt Quick and C++, with the face and the
+feature set of a TI-84 Plus.
 
 This is a fork of [omacom-io/omacalc](https://github.com/omacom-io/omacalc),
-which is a dead-simple four-function calculator. It keeps that calculator's
-look, theming and window behaviour, and adds the scientific and graphing
-capabilities of a TI-84 Plus.
+which is a dead-simple four-function calculator. It keeps that
+calculator's theming and window behaviour, and adds the face, the keypad and
+the scientific and graphing capabilities of a TI-84 Plus.
 
-<img width="800" alt="Omacalc with the Tokyo Night theme" src="screenshots/omacalc.png" />
+<img width="420" alt="Omacalc graphing two functions" src="screenshots/omacalc.png" />
 
 ## Install
 
@@ -18,8 +18,17 @@ capabilities of a TI-84 Plus.
 ```
 
 The upstream `omacalc` package owns `/usr/bin/omacalc`, so this build stays in
-`build/`. Run it from there, or copy it somewhere on your `PATH` under a
-different name.
+`build/`. To have the desktop's calculator key open this one instead, put it
+somewhere that comes earlier on `PATH` than `/usr/bin`:
+
+```sh
+sudo cp build/omacalc /usr/local/bin/omacalc
+```
+
+`~/.local/bin` will not do it on a stock Omarchy, because that directory is
+searched *after* `/usr/bin`. The alternative is to point the key binding at the
+build directly. Removing `/usr/local/bin/omacalc` gives the packaged calculator
+back — nothing is overwritten.
 
 ## Using it
 
@@ -47,9 +56,26 @@ describe. `2nd` reaches the second function (`√`, `π`, `sin⁻¹`, `L1`, `ANS
 | `MATRX` | the matrix editor and matrix functions |
 | `MODE` | angle, notation, decimals, complex, graphing mode, plot style, grid, axes |
 
+### The face
+
+The calculator is drawn as the hardware it imitates: a moulded case, a
+monochrome screen, a blue `2nd` key and a green `ALPHA` key, and each key's
+second and alpha functions printed above it in the matching colour. `MODE` has
+a **Faceplate** setting that swaps this for a flat one following the Omarchy
+theme, which is what upstream looks like.
+
+### Command line
+
 `--screen graph` (or `home`, `table`, `lists`, `stats`, `matrix`, `mode`,
 `tests`, …) opens straight onto one screen. `--screenshot FILE` writes the
-interface to a PNG and exits.
+interface to a PNG and exits. `--eval EXPR` enters an expression as if it had
+been typed, printing the answer and leaving it on the home screen:
+
+```sh
+omacalc --eval '5!' --eval 'fnInt(X²,X,0,1)'
+120
+.3333333333
+```
 
 ### Expressions
 
@@ -136,7 +162,8 @@ last answer and `Ctrl+Q` quits.
 - Qt 6: `qt6-base`, `qt6-declarative`
 - `xdg-desktop-portal` and a portal backend
 
-Colors follow the current Omarchy theme
+With the faceplate set to the desktop theme, colors follow the current Omarchy
+theme
 (`~/.local/state/omarchy/current/theme/colors.toml`) and re-tint live when the
 theme changes. Text follows the desktop text size — `omarchy display text
 size`, or GNOME's `text-scaling-factor`.

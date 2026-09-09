@@ -15,6 +15,7 @@ Item {
         case "draw": backend.connectedPlot = value === 0; break;
         case "grid": backend.showGrid = value === 1; break;
         case "axes": backend.showAxes = value === 0; break;
+        case "face": backend.hardwareSkin = value === 0; break;
         }
     }
 
@@ -28,7 +29,9 @@ Item {
         { setting: "graph", label: "Graphing", options: ["Func", "Par", "Pol", "Seq"], current: backend.graphMode },
         { setting: "draw", label: "Plot", options: ["Connected", "Dot"], current: backend.connectedPlot ? 0 : 1 },
         { setting: "grid", label: "Grid", options: ["Off", "On"], current: backend.showGrid ? 1 : 0 },
-        { setting: "axes", label: "Axes", options: ["On", "Off"], current: backend.showAxes ? 0 : 1 }
+        { setting: "axes", label: "Axes", options: ["On", "Off"], current: backend.showAxes ? 0 : 1 },
+        { setting: "face", label: "Faceplate", options: ["Calculator", "Desktop theme"],
+          current: backend.hardwareSkin ? 0 : 1 }
     ]
 
     Flickable {
