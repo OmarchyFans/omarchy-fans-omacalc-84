@@ -61,7 +61,7 @@ Item {
                     text: modelData.body
                     placeholder: "expression in " + app.graphParameter()
                     onAccepted: backend.setFunctionBody(modelData.index, text)
-                    onActiveFocusChanged: if (!activeFocus) backend.setFunctionBody(modelData.index, text)
+                    onEditingFinished: backend.setFunctionBody(modelData.index, text)
                 }
             }
         }

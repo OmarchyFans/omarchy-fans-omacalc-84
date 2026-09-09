@@ -11,6 +11,9 @@ Rectangle {
     property string placeholder
     property bool numeric: false
     signal accepted()
+    // Emitted when the cursor leaves, so an edit is kept even if the field is
+    // never confirmed with Enter.
+    signal editingFinished()
     signal moveFocus(int direction)
 
     color: input.activeFocus ? app.mixColors(app.pageColor, app.inkColor, 0.12)
@@ -36,7 +39,12 @@ Rectangle {
         selectedTextColor: app.pageColor
         font.family: "iA Writer Mono S"
         font.pixelSize: Math.round(15 * app.uiScale)
-        onActiveFocusChanged: if (activeFocus) app.activeInput = field
+        onActiveFocusChanged: {
+            if (activeFocus)
+                app.activeInput = field;
+            else
+                field.editingFinished();
+        }
         onAccepted: field.accepted()
         Keys.onUpPressed: field.moveFocus(-1)
         Keys.onDownPressed: field.moveFocus(1)

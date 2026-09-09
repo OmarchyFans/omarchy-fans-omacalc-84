@@ -58,7 +58,7 @@ Item {
                         width: parent.width - Math.round(80 * app.uiScale)
                         text: app.formatWindowValue(backend.window[modelData.key])
                         onAccepted: backend.setWindowValue(modelData.key, text)
-                        onActiveFocusChanged: if (!activeFocus) backend.setWindowValue(modelData.key, text)
+                        onEditingFinished: backend.setWindowValue(modelData.key, text)
                     }
                 }
             }

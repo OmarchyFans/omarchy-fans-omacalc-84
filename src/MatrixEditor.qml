@@ -98,11 +98,9 @@ Item {
                                 text: editor.contents.cells[matrixRow.rowIndex][index]
                                 onAccepted: backend.setMatrixCell(editor.current,
                                                                   matrixRow.rowIndex, index, text)
-                                onActiveFocusChanged: {
-                                    if (!activeFocus)
-                                        backend.setMatrixCell(editor.current, matrixRow.rowIndex,
-                                                              index, text);
-                                }
+                                onEditingFinished: backend.setMatrixCell(editor.current,
+                                                                        matrixRow.rowIndex,
+                                                                        index, text)
                             }
                         }
                     }

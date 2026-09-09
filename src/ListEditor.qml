@@ -71,10 +71,8 @@ Item {
                             text: index < listColumn.listData.values.length
                                   ? listColumn.listData.values[index] : ""
                             onAccepted: backend.setListCell(listColumn.listData.name, index, text)
-                            onActiveFocusChanged: {
-                                if (!activeFocus)
-                                    backend.setListCell(listColumn.listData.name, index, text);
-                            }
+                            onEditingFinished: backend.setListCell(listColumn.listData.name,
+                                                                  index, text)
                         }
                     }
                 }
