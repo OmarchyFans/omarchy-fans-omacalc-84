@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "fans.omarchy.omagraph",
-  "name": "Omagraph",
+  "id": "fans.omarchy.omacalc-84",
+  "name": "OmaCalc-84",
   "version": "1.0.0",
   "author": "omarchy.fans",
   "license": "MIT",
@@ -13,11 +13,11 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Omagraph",
+    "displayName": "OmaCalc-84",
     "description": "Bar button that opens the graphing calculator.",
     "category": "Productivity",
     "aliases": [
-      "omagraph",
+      "omacalc-84",
       "calculator",
       "graphing-calculator"
     ],

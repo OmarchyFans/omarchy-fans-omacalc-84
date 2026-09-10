@@ -1,11 +1,11 @@
 QT += core gui testlib dbus
 CONFIG += testcase c++17
 TEMPLATE = app
-TARGET = tst_omagraph
+TARGET = tst_omacalc84
 
 INCLUDEPATH += ../src
 SOURCES += \
-    tst_omagraph.cpp \
+    tst_omacalc84.cpp \
     ../src/backend.cpp \
     ../src/engine.cpp \
     ../src/special.cpp \

@@ -9,7 +9,7 @@ if command -v qmake6 >/dev/null 2>&1; then
 elif command -v qmake >/dev/null 2>&1 && qmake -query QT_VERSION | grep -q '^6\.'; then
   QMAKE=qmake
 else
-  echo "A Qt 6 qmake (qmake6) is required to build Omagraph." >&2
+  echo "A Qt 6 qmake (qmake6) is required to build OmaCalc-84." >&2
   exit 1
 fi
 
@@ -18,7 +18,7 @@ JOBS="$(nproc 2>/dev/null || echo 1)"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-"$QMAKE" "$ROOT/omagraph.pro"
+"$QMAKE" "$ROOT/omacalc-84.pro"
 make -j"$JOBS"
 
-echo "Built $BUILD_DIR/omagraph"
+echo "Built $BUILD_DIR/omacalc-84"

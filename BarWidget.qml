@@ -8,18 +8,18 @@ import qs.Ui
 // build directory, and says what to do when it finds neither.
 BarWidget {
   id: root
-  moduleName: "fans.omarchy.omagraph"
+  moduleName: "fans.omarchy.omacalc-84"
 
-  readonly property string localBinary: Qt.resolvedUrl("build/omagraph").toString().replace(/^file:\/\//, "")
+  readonly property string localBinary: Qt.resolvedUrl("build/omacalc-84").toString().replace(/^file:\/\//, "")
 
   readonly property bool opened: false
   function open() { root.launch() }
   function close() {}
 
   function launch(screen) {
-    var command = "if command -v omagraph >/dev/null 2>&1; then exec omagraph ${1:+--screen \"$1\"};"
+    var command = "if command -v omacalc-84 >/dev/null 2>&1; then exec omacalc-84 ${1:+--screen \"$1\"};"
       + " elif [ -x \"$0\" ]; then exec \"$0\" ${1:+--screen \"$1\"};"
-      + " else notify-send 'Omagraph' 'Run install.sh in the plugin folder to build the calculator.'; fi"
+      + " else notify-send 'OmaCalc-84' 'Run install.sh in the plugin folder to build the calculator.'; fi"
     Quickshell.execDetached(["sh", "-c", command, root.localBinary, screen || ""])
   }
 
@@ -33,7 +33,7 @@ BarWidget {
     text: "󰃬"                    // nf-md-calculator
     slotSize: Style.bar.statusSlot
     fontSize: Style.font.caption
-    tooltipText: "Omagraph (right click: graph screen)"
+    tooltipText: "OmaCalc-84 (right click: graph screen)"
     onPressed: function(b) {
       if (b === Qt.RightButton) root.launch("graph")
       else root.launch()

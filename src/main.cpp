@@ -20,9 +20,9 @@
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("omagraph"));
-    app.setDesktopFileName(QStringLiteral("omagraph"));
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("omagraph")));
+    app.setApplicationName(QStringLiteral("omacalc-84"));
+    app.setDesktopFileName(QStringLiteral("omacalc-84"));
+    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("omacalc-84")));
 
     QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/iAWriterMonoS-Regular.ttf"));
     QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/iAWriterMonoS-Bold.ttf"));
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 
     engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
     if (engine.rootObjects().isEmpty()) {
-        qCritical() << "Could not load the Omagraph interface; resource available:"
+        qCritical() << "Could not load the OmaCalc-84 interface; resource available:"
                     << QFile::exists(QStringLiteral(":/Main.qml"));
         return -1;
     }

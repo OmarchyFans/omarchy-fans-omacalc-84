@@ -41,7 +41,7 @@ QString errorFor(const QString &source, calc::Context &context) {
 }
 }
 
-class OmagraphTest : public QObject {
+class Omacalc84Test : public QObject {
     Q_OBJECT
 
 private slots:
@@ -661,5 +661,5 @@ private:
     QTemporaryDir m_settingsDirectory;
 };
 
-QTEST_MAIN(OmagraphTest)
-#include "tst_omagraph.moc"
+QTEST_MAIN(Omacalc84Test)
+#include "tst_omacalc84.moc"

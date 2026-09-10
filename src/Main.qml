@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 360
     minimumHeight: 560
     visible: true
-    title: "Omagraph"
+    title: "OmaCalc-84"
 
     // Named so a child can point a GraphView at it: writing `backend: backend`
     // inside the item would resolve to the item's own property instead.
@@ -545,7 +545,7 @@ ApplicationWindow {
             spacing: Math.round(8 * win.uiScale)
 
             Text {
-                text: "omagraph"
+                text: "omacalc-84"
                 color: win.caseTitle
                 font.family: "iA Writer Mono S"
                 font.bold: true

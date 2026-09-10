@@ -1,11 +1,11 @@
-<h1 align="center">Omagraph</h1>
+<h1 align="center">OmaCalc-84</h1>
 
 <p align="center">
   A graphing calculator for Omarchy, with the face and the feature set of a TI-84 Plus.
 </p>
 
 <p align="center">
-  <img src="preview.png" alt="Omagraph graphing sin(X) and X²/4-3" width="360">
+  <img src="preview.png" alt="OmaCalc-84 graphing sin(X) and X²/4-3" width="360">
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 ---
 
-Omarchy ships **omacalc**, a lovely four-function calculator. Omagraph is that
+Omarchy ships **omacalc**, a lovely four-function calculator. OmaCalc-84 is that
 calculator taken the rest of the way: the same theming and the same care, with
 a black case, a monochrome screen, a blue `2nd` key, a green `ALPHA` key, and
 everything the graphing calculator you had in school could do.
@@ -31,8 +31,8 @@ included. Errors come back by their proper names: `ERR:SYNTAX`,
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/OmarchyFans/omarchy-fans-omagraph
-cd ~/.config/omarchy/plugins/fans.omarchy.omagraph
+omarchy plugin add https://github.com/OmarchyFans/omarchy-fans-omacalc-84 --enable
+cd ~/.config/omarchy/plugins/fans.omarchy.omacalc-84
 ./install.sh
 ```
 
@@ -43,10 +43,11 @@ whether Omarchy's calculator key (`SUPER + CTRL + Q`) should open it instead of
 the built-in one. Say no to all four and the bar button still works. Nothing is
 overwritten, and every config file is backed up before a line is appended.
 
-Then put the button on the bar:
+`--enable` puts the button on the bar and asks which section it belongs in. If
+you added the plugin without it, place the button any time with:
 
 ```sh
-omarchy-shell bar add fans.omarchy.omagraph
+omarchy plugin enable fans.omarchy.omacalc-84 right
 ```
 
 **Requirements:** `qt6-base`, `qt6-declarative`, `base-devel` (to build), and an
@@ -60,15 +61,15 @@ sudo pacman -S --needed qt6-base qt6-declarative base-devel
 ## Remove
 
 ```sh
-cd ~/.config/omarchy/plugins/fans.omarchy.omagraph
+cd ~/.config/omarchy/plugins/fans.omarchy.omacalc-84
 ./uninstall.sh
-omarchy-shell bar remove fans.omarchy.omagraph
-omarchy plugin remove fans.omarchy.omagraph
+omarchy plugin disable fans.omarchy.omacalc-84
+omarchy plugin remove fans.omarchy.omacalc-84
 ```
 
 `uninstall.sh` takes back the link, the desktop entry and both keybindings.
 Your window size, equations and lists live in
-`~/.config/omarchy.fans/omagraph.conf` and are left alone — delete that file if
+`~/.config/omarchy.fans/omacalc-84.conf` and are left alone — delete that file if
 you want them gone too.
 
 ## Using it
@@ -186,9 +187,9 @@ Typing goes to the focused field, so you can write an expression out directly.
 `Ctrl+Q` quits.
 
 ```sh
-omagraph --eval '5!' --eval 'fnInt(X²,X,0,1)'   # 120, .3333333333
-omagraph --screen graph                          # open straight onto a screen
-omagraph --screenshot shot.png                   # render the interface and exit
+omacalc-84 --eval '5!' --eval 'fnInt(X²,X,0,1)'   # 120, .3333333333
+omacalc-84 --screen graph                          # open straight onto a screen
+omacalc-84 --screenshot shot.png                   # render the interface and exit
 ```
 
 ## What is not here
@@ -203,7 +204,7 @@ omagraph --screenshot shot.png                   # render the interface and exit
 
 ## Built on
 
-Omagraph is a fork of [omacom-io/omacalc](https://github.com/omacom-io/omacalc),
+OmaCalc-84 is a fork of [omacom-io/omacalc](https://github.com/omacom-io/omacalc),
 the calculator that ships with Omarchy, and keeps its theming, its text scaling
 and its window behaviour. The expression engine, the graphing, the statistics
 and the case are new. The copyright and MIT licence of the original are
