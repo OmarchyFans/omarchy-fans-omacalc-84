@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "fans.omarchy.omagraph",
+  "name": "Omagraph",
+  "version": "1.0.0",
+  "author": "omarchy.fans",
+  "license": "MIT",
+  "description": "A graphing calculator with the face and the feature set of a TI-84 Plus. Graphs functions, parametrics, polars and sequences with trace and the CALC menu, and carries the tables, lists, regressions, statistics tests, matrices and complex arithmetic that go with them. Opens from the bar or a keybinding.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omagraph",
+    "description": "Bar button that opens the graphing calculator.",
+    "category": "Productivity",
+    "aliases": [
+      "omagraph",
+      "calculator",
+      "graphing-calculator"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

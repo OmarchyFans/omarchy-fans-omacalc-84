@@ -20,14 +20,14 @@
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("omacalc"));
-    app.setDesktopFileName(QStringLiteral("omacalc"));
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("omacalc")));
+    app.setApplicationName(QStringLiteral("omagraph"));
+    app.setDesktopFileName(QStringLiteral("omagraph"));
+    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("omagraph")));
 
     QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/iAWriterMonoS-Regular.ttf"));
     QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/iAWriterMonoS-Bold.ttf"));
-    app.setOrganizationName(QStringLiteral("Omacom"));
-    app.setOrganizationDomain(QStringLiteral("omacom.io"));
+    app.setOrganizationName(QStringLiteral("omarchy.fans"));
+    app.setOrganizationDomain(QStringLiteral("omarchy.fans"));
 
     QQuickStyle::setStyle(QStringLiteral("Material"));
 
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 
     engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
     if (engine.rootObjects().isEmpty()) {
-        qCritical() << "Could not load the Omacalc interface; resource available:"
+        qCritical() << "Could not load the Omagraph interface; resource available:"
                     << QFile::exists(QStringLiteral(":/Main.qml"));
         return -1;
     }

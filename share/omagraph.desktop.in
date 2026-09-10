@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Omagraph
+GenericName=Graphing Calculator
+Comment=Graphing calculator with the feature set of a TI-84 Plus
+Exec=@BIN@
+Icon=omagraph
+Terminal=false
+Categories=Education;Science;Math;Utility;Calculator;
+Keywords=calculator;graph;graphing;math;statistics;matrix;
+StartupNotify=true

@@ -1,176 +1,219 @@
-# Omacalc
+<h1 align="center">Omagraph</h1>
 
-A graphing calculator built with Qt Quick and C++, with the face and the
-feature set of a TI-84 Plus.
+<p align="center">
+  A graphing calculator for Omarchy, with the face and the feature set of a TI-84 Plus.
+</p>
 
-This is a fork of [omacom-io/omacalc](https://github.com/omacom-io/omacalc),
-which is a dead-simple four-function calculator. It keeps that
-calculator's theming and window behaviour, and adds the face, the keypad and
-the scientific and graphing capabilities of a TI-84 Plus.
+<p align="center">
+  <img src="preview.png" alt="Omagraph graphing sin(X) and X²/4-3" width="360">
+</p>
 
-<img width="420" alt="Omacalc graphing two functions" src="screenshots/omacalc.png" />
+<p align="center">
+  <sub>
+    Functions · Parametrics · Polars · Sequences · Tables · Lists · Regressions ·
+    Statistics tests · Matrices · Complex numbers
+  </sub>
+</p>
+
+---
+
+Omarchy ships **omacalc**, a lovely four-function calculator. Omagraph is that
+calculator taken the rest of the way: the same theming and the same care, with
+a black case, a monochrome screen, a blue `2nd` key, a green `ALPHA` key, and
+everything the graphing calculator you had in school could do.
+
+It is a real calculator, not a keypad glued to a parser. `-2²` is `-4`, powers
+chain left to right so `2^3^2` is `64`, and implied multiplication ranks with
+division, so `1/2X` is `(1/2)X` — the Equation Operating System rules, quirks
+included. Errors come back by their proper names: `ERR:SYNTAX`,
+`ERR:DIVIDE BY 0`, `ERR:NONREAL ANS`, `ERR:SINGULAR MAT`.
 
 ## Install
 
 ```sh
-./bin/build          # needs a Qt 6 qmake (qmake6)
-./build/omacalc
+omarchy plugin add https://github.com/OmarchyFans/omarchy-fans-omagraph
+cd ~/.config/omarchy/plugins/fans.omarchy.omagraph
+./install.sh
 ```
 
-The upstream `omacalc` package owns `/usr/bin/omacalc`, so this build stays in
-`build/`. To have the desktop's calculator key open this one instead, put it
-somewhere that comes earlier on `PATH` than `/usr/bin`:
+`omarchy plugin add` installs the bar button. `install.sh` builds the
+calculator from source and then asks, one at a time, whether you want it linked
+into `~/.local/bin`, given a desktop entry, bound to `SUPER + ALT + C`, and
+whether Omarchy's calculator key (`SUPER + CTRL + Q`) should open it instead of
+the built-in one. Say no to all four and the bar button still works. Nothing is
+overwritten, and every config file is backed up before a line is appended.
+
+Then put the button on the bar:
 
 ```sh
-sudo cp build/omacalc /usr/local/bin/omacalc
+omarchy-shell bar add fans.omarchy.omagraph
 ```
 
-`~/.local/bin` will not do it on a stock Omarchy, because that directory is
-searched *after* `/usr/bin`. The alternative is to point the key binding at the
-build directly. Removing `/usr/local/bin/omacalc` gives the packaged calculator
-back — nothing is overwritten.
+**Requirements:** `qt6-base`, `qt6-declarative`, `base-devel` (to build), and an
+`xdg-desktop-portal` backend. On a stock Omarchy only `base-devel` may be
+missing:
+
+```sh
+sudo pacman -S --needed qt6-base qt6-declarative base-devel
+```
+
+## Remove
+
+```sh
+cd ~/.config/omarchy/plugins/fans.omarchy.omagraph
+./uninstall.sh
+omarchy-shell bar remove fans.omarchy.omagraph
+omarchy plugin remove fans.omarchy.omagraph
+```
+
+`uninstall.sh` takes back the link, the desktop entry and both keybindings.
+Your window size, equations and lists live in
+`~/.config/omarchy.fans/omagraph.conf` and are left alone — delete that file if
+you want them gone too.
 
 ## Using it
 
-The calculator is a line editor, not a button sequence: you type a whole
-expression and press `ENTER`. The keypad types into whichever field has the
-cursor, so the same pad drives the home screen, the `Y=` editor, the window
-variables, the list editor and the matrix editor.
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/home.png" alt="The home screen"></td>
+    <td width="50%"><img src="docs/img/equations.png" alt="The Y= editor"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Every answer stays on screen above the line you are typing</sub></td>
+    <td align="center"><sub>Ten equations, each with its own line style</sub></td>
+  </tr>
+</table>
 
-`2nd` and `ALPHA` shift the keypad the way the printed legends above each key
-describe. `2nd` reaches the second function (`√`, `π`, `sin⁻¹`, `L1`, `ANS`,
-`ENTRY`, …); `ALPHA` types the letter in the corner, and `2nd ALPHA` locks it.
+It is a line editor, not a button sequence: type the whole expression, press
+`ENTER`. The keypad types into whichever field holds the cursor, so the same
+pad drives the home screen, the `Y=` editor, the window variables, the list
+editor and the matrix editor.
+
+`2nd` and `ALPHA` shift the keypad the way the legends printed above each key
+describe — blue for the second function, green for the letter.
 
 ### Screens
 
 | Key | Screen |
 | --- | --- |
-| `Y=` | the equation editor for the current graphing mode |
+| `Y=` | the equations for the current graphing mode |
 | `WIND` | `Xmin`/`Xmax`/`Xscl`, `Ymin`/`Ymax`/`Yscl`, `Xres`, the parametric, polar and sequence ranges, and `TblStart`/`ΔTbl` |
 | `ZOOM` | ZStandard, ZTrig, ZDecimal, ZSquare, Zoom In/Out, ZoomFit, ZInteger, ZoomStat, ZPrevious |
 | `TRACE` | walks the cursor along a curve; `▲`/`▼` change which equation is traced |
-| `GRAPH` | the plot; tap to move the trace cursor, scroll to zoom |
+| `GRAPH` | the plot — tap to move the cursor, scroll to zoom |
 | `2nd GRAPH` | the table of values |
-| `2nd TRACE` | the CALC menu: value, zero, minimum, maximum, intersect, `dy/dx`, `∫f(x)dx` |
-| `STAT` | the list editor, 1-Var/2-Var stats, every regression model, and STAT TESTS |
-| `MATRX` | the matrix editor and matrix functions |
-| `MODE` | angle, notation, decimals, complex, graphing mode, plot style, grid, axes |
-
-### The face
-
-The calculator is drawn as the hardware it imitates: a moulded case, a
-monochrome screen, a blue `2nd` key and a green `ALPHA` key, and each key's
-second and alpha functions printed above it in the matching colour. `MODE` has
-a **Faceplate** setting that swaps this for a flat one following the Omarchy
-theme, which is what upstream looks like.
-
-### Command line
-
-`--screen graph` (or `home`, `table`, `lists`, `stats`, `matrix`, `mode`,
-`tests`, …) opens straight onto one screen. `--screenshot FILE` writes the
-interface to a PNG and exits. `--eval EXPR` enters an expression as if it had
-been typed, printing the answer and leaving it on the home screen:
-
-```sh
-omacalc --eval '5!' --eval 'fnInt(X²,X,0,1)'
-120
-.3333333333
-```
+| `2nd TRACE` | value, zero, minimum, maximum, intersect, `dy/dx`, `∫f(x)dx` |
+| `STAT` | the list editor, 1-Var/2-Var stats, the regressions, and the tests |
+| `MATRX` | the matrix editor and the matrix functions |
+| `MODE` | angle, notation, decimals, complex, graphing mode, plot style, grid, axes, faceplate |
 
 ### Expressions
-
-Precedence follows the calculator's Equation Operating System, including the
-parts that surprise people: `-2²` is `-4`, powers chain left to right so
-`2^3^2` is `64`, and implied multiplication ranks with division, so `1/2X` is
-`(1/2)X`. A closing parenthesis may be left off at the end of a line.
-
-Values are complex numbers, lists or matrices:
 
 ```
 2(3+4)              14
 5!                  120
 5 nCr 2             10
-√(16)               4
 sin(30)             .5          (in Degree mode)
+√(16)+2^10          1028
 {1,2,3}+1           {2, 3, 4}
 [[1,2],[3,4]]⁻¹     [[-2, 1][1.5, -0.5]]
 0.75▶Frac           3/4
 5→A: A²             25
 fnInt(X²,X,0,1)     .3333333333
 solve(X²-2,X,1)     1.414213562
+normalcdf(-1,1)     .6826894921
 ```
 
-Available throughout: the trigonometric, inverse and hyperbolic functions,
-`ln`, `log`, `logBASE`, `e^`, `10^`, roots, `abs`, `round`, `iPart`, `fPart`,
-`int`, `min`, `max`, `gcd`, `lcm`, `remainder`, `nPr`, `nCr`, `!`, the random
-family, the complex parts (`conj`, `real`, `imag`, `angle`), the list functions
-(`sum`, `prod`, `mean`, `median`, `stdDev`, `variance`, `cumSum`, `ΔList`,
-`sortA`, `sortD`, `seq`, `augment`, `dim`, `fill`), the matrix functions
-(`det`, `ᵀ`, `identity`, `ref`, `rref`, `augment`, `randM`), the calculus
-routines (`nDeriv`, `fnInt`, `fMin`, `fMax`, `solve`) and the whole DISTR menu
-(`normalpdf`/`cdf`, `invNorm`, `t`, `χ²`, `F`, `binom`, `poisson`, `geomet`).
-Errors are reported by the same names the calculator uses: `ERR:SYNTAX`,
-`ERR:DIVIDE BY 0`, `ERR:DOMAIN`, `ERR:NONREAL ANS`, `ERR:DIM MISMATCH`,
-`ERR:SINGULAR MAT`.
+Values are complex numbers, lists or matrices, and they mix: `mean(L1)` works
+on the home screen, a regression can be stored straight into `Y1`, and `√(-4)`
+is `2i` once the MODE screen is set to `a+bi`.
 
-Answers show ten significant digits, switching to scientific notation past
-that, and the MODE screen offers Sci and Eng notation and a fixed number of
-decimals.
+The whole catalogue is there — trigonometric, inverse and hyperbolic functions,
+`ln`, `log`, `logBASE`, roots, `abs`, `round`, `iPart`, `fPart`, `int`, `min`,
+`max`, `gcd`, `lcm`, `remainder`, `nPr`, `nCr`, `!`, the random family, the
+complex parts, the list functions, the matrix functions, the calculus routines
+(`nDeriv`, `fnInt`, `fMin`, `fMax`, `solve`) and every distribution in DISTR.
+
+Answers show ten significant digits and go to scientific notation past that;
+Sci, Eng and a fixed number of decimals are on the MODE screen.
 
 ### Graphing
 
-Function, parametric, polar and sequence modes each get their own set of
-equations (`Y1`–`Y0`, `X1T`/`Y1T`–`X6T`/`Y6T`, `r1`–`r6`, `u`/`v`/`w`). Each
-equation can be switched off or given a thick or dotted line; press and hold
-its dot in the `Y=` editor to cycle the style. Curves break rather than
-joining across an asymptote.
+Function, parametric, polar and sequence modes each keep their own equations
+(`Y1`–`Y0`, `X1T`/`Y1T`–`X6T`/`Y6T`, `r1`–`r6`, `u`/`v`/`w`). Any equation can
+be switched off or drawn thick or dotted — press and hold its dot in the `Y=`
+editor to cycle the style. Curves break at an asymptote instead of joining
+across the screen.
 
 ### Statistics
 
-`L1`–`L6` are edited in a grid and are ordinary values everywhere else, so
-`mean(L1)` works on the home screen. The regression models are LinReg (both
-forms), QuadReg, CubicReg, QuartReg, LnReg, ExpReg, PwrReg, Logistic, SinReg
-and Med-Med; any of them can be stored into `Y1` and drawn over a scatter plot.
-Three stat plots support scatter, xy-line, histogram, box plot and normal
-probability.
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/lists.png" alt="The list editor"></td>
+    <td width="50%"><img src="docs/img/tests.png" alt="The statistics tests"></td>
+  </tr>
+</table>
 
-STAT TESTS covers Z-Test, T-Test, 2-SampTTest, 2-SampZTest, 1-PropZTest,
+`L1`–`L6` are edited in a grid and are ordinary values everywhere else. The
+regressions are LinReg (both forms), QuadReg, CubicReg, QuartReg, LnReg,
+ExpReg, PwrReg, Logistic, SinReg and Med-Med; any of them stores into `Y1` and
+draws over a scatter plot. Three stat plots cover scatter, xy-line, histogram,
+box plot and normal probability.
+
+The tests are Z-Test, T-Test, 2-SampTTest, 2-SampZTest, 1-PropZTest,
 2-PropZTest, χ²GOF-Test, χ²-Test, LinRegTTest, ANOVA, ZInterval, TInterval,
 2-SampTInt, 1-PropZInt and 2-PropZInt.
 
-### Keyboard
+### The faceplate
 
-Typing goes to the focused field, so an expression can be written out directly.
-`Enter` evaluates, `Escape` returns to the home screen, `Ctrl+C` copies the
-last answer and `Ctrl+Q` quits.
+<p align="center">
+  <img src="docs/img/mode.png" alt="The MODE screen" width="320">
+</p>
+
+The calculator is drawn as the hardware it imitates. If you would rather it
+disappeared into the desktop, `MODE` → **Faceplate** → *Desktop theme* gives it
+the flat look that follows your Omarchy colours, which is what omacalc looks
+like today.
+
+Either way the theme is live: colours come from
+`~/.local/state/omarchy/current/theme/colors.toml` and re-tint when you switch
+themes, and text follows `omarchy display text size`.
+
+### Keyboard and command line
+
+Typing goes to the focused field, so you can write an expression out directly.
+`Enter` evaluates, `Escape` goes home, `Ctrl+C` copies the last answer,
+`Ctrl+Q` quits.
+
+```sh
+omagraph --eval '5!' --eval 'fnInt(X²,X,0,1)'   # 120, .3333333333
+omagraph --screen graph                          # open straight onto a screen
+omagraph --screenshot shot.png                   # render the interface and exit
+```
 
 ## What is not here
 
 - Sequence mode graphs explicit formulas in `n`; recursive definitions that
   refer to `u(n-1)` are not supported.
-- There is no programming (`PRGM`), no `APPS`, and no link or transfer menu.
-- There is no `DRAW` menu, so no drawing on top of a graph by hand.
-- Degrees-minutes-seconds can be displayed with `▶DMS` but not typed in, so
-  `30°15'` is a syntax error.
-- `ENTER` in the `Y=`, list and matrix editors commits the field but does not
-  move the cursor to the next one.
-- The settings live in the same `Omacom/omacalc.conf` as the packaged
-  `omacalc`, so the two share their window size and position.
+- No programming (`PRGM`), no `APPS`, and no link or transfer menu.
+- No `DRAW` menu, so nothing is drawn on a graph by hand.
+- Degrees-minutes-seconds display with `▶DMS`, but `30°15'` cannot be typed in.
+- `ENTER` in the `Y=`, list and matrix editors commits the field without moving
+  to the next one.
 
-## Requirements
+## Built on
 
-- Qt 6: `qt6-base`, `qt6-declarative`
-- `xdg-desktop-portal` and a portal backend
+Omagraph is a fork of [omacom-io/omacalc](https://github.com/omacom-io/omacalc),
+the calculator that ships with Omarchy, and keeps its theming, its text scaling
+and its window behaviour. The expression engine, the graphing, the statistics
+and the case are new. The copyright and MIT licence of the original are
+retained in [LICENSE](LICENSE).
 
-With the faceplate set to the desktop theme, colors follow the current Omarchy
-theme
-(`~/.local/state/omarchy/current/theme/colors.toml`) and re-tint live when the
-theme changes. Text follows the desktop text size — `omarchy display text
-size`, or GNOME's `text-scaling-factor`.
+The keypad is set in iA Writer Mono, bundled under the SIL Open Font License
+1.1 (see [fonts/OFL.txt](fonts/OFL.txt)); the font is copyright Information
+Architects Inc. and is based on IBM Plex, copyright IBM Corp.
 
-The iA Writer Mono font is bundled under the SIL Open Font License 1.1; see
-`fonts/OFL.txt`. The font is copyright Information Architects Inc. and based on
-IBM Plex, copyright IBM Corp.
+There are no other dependencies beyond Qt 6 and a desktop portal.
 
 ## Tests
 
@@ -178,7 +221,11 @@ IBM Plex, copyright IBM Corp.
 ./bin/test
 ```
 
-The suite covers the expression engine (precedence, every function family,
-formatting, the error names), the graphing backend (sampling in all four
-modes, zoom, table, trace, the CALC routines), and the statistics (summaries,
-every regression model, and the inference procedures against known values).
+41 cases covering the expression engine (precedence, every function family,
+formatting, the error names), the graphing backend (sampling in all four modes,
+zoom, table, trace, the CALC routines) and the statistics (summaries, every
+regression model, and the inference procedures checked against known values).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
