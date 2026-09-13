@@ -3,25 +3,18 @@ import Quickshell
 import qs.Commons
 import qs.Ui
 
-// Bar button that opens the calculator. The binary is built from source by
-// install.sh, so this looks for it on PATH first and then in the plugin's own
-// build directory, and says what to do when it finds neither.
+// Bar button that opens the calculator. Launching is done by Launcher.qml,
+// which only ever runs this plugin's own build/omacalc-84 by absolute path,
+// after checking its ownership and permissions, with a closed environment.
 BarWidget {
   id: root
   moduleName: "fans.omarchy.omacalc-84"
 
-  readonly property string localBinary: Qt.resolvedUrl("build/omacalc-84").toString().replace(/^file:\/\//, "")
-
   readonly property bool opened: false
-  function open() { root.launch() }
+  function open() { launcher.launch() }
   function close() {}
 
-  function launch(screen) {
-    var command = "if command -v omacalc-84 >/dev/null 2>&1; then exec omacalc-84 ${1:+--screen \"$1\"};"
-      + " elif [ -x \"$0\" ]; then exec \"$0\" ${1:+--screen \"$1\"};"
-      + " else notify-send 'OmaCalc-84' 'Run install.sh in the plugin folder to build the calculator.'; fi"
-    Quickshell.execDetached(["sh", "-c", command, root.localBinary, screen || ""])
-  }
+  Launcher { id: launcher }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
@@ -35,8 +28,8 @@ BarWidget {
     fontSize: Style.font.caption
     tooltipText: "OmaCalc-84 (right click: graph screen)"
     onPressed: function(b) {
-      if (b === Qt.RightButton) root.launch("graph")
-      else root.launch()
+      if (b === Qt.RightButton) launcher.launch("graph")
+      else launcher.launch()
     }
   }
 }

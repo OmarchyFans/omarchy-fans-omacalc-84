@@ -28,6 +28,46 @@ division, so `1/2X` is `(1/2)X` — the Equation Operating System rules, quirks
 included. Errors come back by their proper names: `ERR:SYNTAX`,
 `ERR:DIVIDE BY 0`, `ERR:NONREAL ANS`, `ERR:SINGULAR MAT`.
 
+## What it does
+
+OmaCalc-84 puts a full graphing calculator one click away on your Omarchy bar.
+Click the calculator button to open it, or right click to go straight to the
+graph. It opens in its own window, keeps your equations and lists between
+sessions, and needs no network.
+
+- **TI-84 Plus faceplate:** a black case, a monochrome LCD, and a working
+  `2nd` / `ALPHA` keypad with the legends printed above each key. You can
+  also switch to a flat look that follows your Omarchy theme.
+- **Scientific engine:** real TI order of operations, ten significant digits,
+  Sci/Eng/Fix notation, `▶Frac`, `▶DMS`, and degree or radian mode.
+- **Complex numbers, lists and matrices:** first-class values that mix in any
+  expression, including `a+bi` and `re^θi` forms, `L1`–`L6`, and matrix
+  inverse, determinant and transpose.
+- **Four graphing modes:** function, parametric, polar and sequence graphs,
+  with ten equations per mode, a line style for each, and curves that break
+  at asymptotes.
+- **Zoom and trace:** ZStandard, ZTrig, ZDecimal, ZSquare, ZoomFit, ZInteger,
+  ZoomStat and more. Scroll to zoom, tap to place the cursor, and trace along
+  any curve.
+- **CALC menu:** value, zero, minimum, maximum, intersect, `dy/dx` and
+  `∫f(x)dx` on the graph.
+- **Table of values:** tables built from `TblStart` and `ΔTbl`.
+- **Calculus on the home screen:** `nDeriv`, `fnInt`, `fMin`, `fMax` and
+  `solve`.
+- **Statistics:** a spreadsheet-style list editor, 1-Var and 2-Var stats, and
+  three stat plots (scatter, xy-line, histogram, box plot, normal probability).
+- **Eleven regression models:** LinReg, QuadReg, CubicReg, QuartReg, LnReg,
+  ExpReg, PwrReg, Logistic, SinReg and Med-Med, each storable into `Y1`.
+- **Fifteen inference procedures:** Z/T tests, two-sample and proportion
+  tests, χ² goodness-of-fit and independence, LinRegTTest, ANOVA, and their
+  confidence intervals.
+- **Every DISTR distribution:** normal, t, χ², F, binomial, Poisson and
+  geometric pdf and cdf, plus `invNorm` and `invT`.
+- **Live Omarchy theming:** colours re-tint when you switch themes, and text
+  follows `omarchy display text size`.
+- **Keyboard and command line:** type expressions directly, `Ctrl+C` copies the
+  answer, and `omacalc-84 --eval '5!'` works in scripts.
+
 ## Install
 
 ```sh
@@ -40,7 +80,11 @@ cd ~/.config/omarchy/plugins/fans.omarchy.omacalc-84
 calculator from source and then asks, one at a time, whether you want it linked
 into `~/.local/bin`, given a desktop entry, bound to `SUPER + ALT + C`, and
 whether Omarchy's calculator key (`SUPER + CTRL + Q`) should open it instead of
-the built-in one. Say no to all four and the bar button still works. Nothing is
+the built-in one. Say no to all four and the bar button still works: it always runs the copy
+built inside the plugin folder, by absolute path, never whatever is first on
+`PATH`. Before starting it, the button checks that the file and every
+directory above it belong to you (or root) and are not writable by anyone
+else. Nothing is
 overwritten, and every config file is backed up before a line is appended.
 
 `--enable` puts the button on the bar and asks which section it belongs in. If
