@@ -2,13 +2,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Starts the calculator without trusting PATH. The only program it will run is
-// the binary install.sh builds inside this plugin (build/omacalc-84), and only
-// after /usr/bin/stat confirms that every directory leading to it and the file
+// Starts the calculator without trusting PATH. The only programs it will run
+// are files inside this plugin: the binary install.sh builds (build/omacalc-84)
+// and the update helper (lib/update.sh, through /usr/bin/bash), and only after
+// /usr/bin/stat confirms that every directory leading to the file and the file
 // itself belong to root or the current user, are not group or world writable,
-// are not symlinks, and that the binary is a regular executable file. The
-// calculator and the notification helper are started by absolute path with
-// direct arguments and a closed environment.
+// are not symlinks, and that the file is a regular executable file. Everything
+// is started by absolute path with direct arguments and a closed environment.
 Item {
   id: root
 
@@ -18,11 +18,19 @@ Item {
 
   property string statTool: "/usr/bin/stat"
   property string notifyTool: "/usr/bin/notify-send"
+  property string shellTool: "/usr/bin/bash"
 
-  // Emitted after each attempt, for tests: ok is true when the binary was started.
+  // Emitted after each attempt, for tests: ok is true when the program was started.
   signal finished(bool ok, string reason)
 
+  // What the pending check will start once the paths pass: the file, its
+  // arguments, whether it is a script for shellTool, and an optional
+  // Quickshell Process to run it in (so its output can be read) instead of
+  // starting it detached.
+  property string pendingTarget: ""
   property var pendingArguments: []
+  property bool pendingScript: false
+  property var pendingProcess: null
 
   readonly property var passedVariables: [
     "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "XDG_RUNTIME_DIR", "WAYLAND_DISPLAY",
@@ -41,10 +49,10 @@ Item {
     return env
   }
 
-  // Every directory from / down to build/, then the binary itself.
-  function checkedPaths() {
+  // Every directory from / down to the file's folder, then the file itself.
+  function checkedPaths(target) {
     var paths = ["/"]
-    var parts = binary.split("/").filter(function(p) { return p.length > 0 })
+    var parts = target.split("/").filter(function(p) { return p.length > 0 })
     var current = ""
     for (var i = 0; i < parts.length; i++) {
       current += "/" + parts[i]
@@ -54,9 +62,22 @@ Item {
   }
 
   function launch(screen) {
+    start(binary, screen ? ["--screen", String(screen)] : [], false, null)
+  }
+
+  // Run one of this plugin's scripts after the same checks, either in PROCESS
+  // (a Quickshell Process, whose command is set here) or detached.
+  function runScript(path, args, process) {
+    start(path, args, true, process || null)
+  }
+
+  function start(target, args, script, process) {
     if (checker.running) return
-    pendingArguments = screen ? ["--screen", String(screen)] : []
-    output.expected = checkedPaths()
+    pendingTarget = target
+    pendingArguments = args || []
+    pendingScript = script
+    pendingProcess = process
+    output.expected = checkedPaths(target)
     checker.command = [statTool, "-c", "%F|%u|%a", "/proc/self/stat"].concat(output.expected)
     checker.running = true
   }
@@ -72,7 +93,9 @@ Item {
 
   // Returns an empty string when the stat output is acceptable, otherwise why not.
   function verify(text, exitCode) {
-    var missing = "The calculator is not built yet. Run install.sh in " + pluginRoot + "."
+    var missing = pendingScript
+      ? "The plugin file " + pendingTarget + " is missing. Reinstall the plugin."
+      : "The calculator is not built yet. Run install.sh in " + pluginRoot + "."
     if (exitCode !== 0) return missing
     var lines = text.split("\n").filter(function(l) { return l.length > 0 })
     var paths = output.expected
@@ -116,12 +139,21 @@ Item {
         root.refuse(reason)
         return
       }
-      Quickshell.execDetached({
-        command: [root.binary].concat(root.pendingArguments),
-        workingDirectory: root.pluginRoot,
-        clearEnvironment: true,
-        environment: root.environment()
-      })
+      var argv = (root.pendingScript ? [root.shellTool, root.pendingTarget] : [root.pendingTarget]).concat(root.pendingArguments)
+      if (root.pendingProcess) {
+        root.pendingProcess.workingDirectory = root.pluginRoot
+        root.pendingProcess.clearEnvironment = true
+        root.pendingProcess.environment = root.environment()
+        root.pendingProcess.command = argv
+        root.pendingProcess.running = true
+      } else {
+        Quickshell.execDetached({
+          command: argv,
+          workingDirectory: root.pluginRoot,
+          clearEnvironment: true,
+          environment: root.environment()
+        })
+      }
       root.finished(true, "")
     }
   }

@@ -102,6 +102,27 @@ missing:
 sudo pacman -S --needed qt6-base qt6-declarative base-devel
 ```
 
+### Updates
+
+About once every six hours the bar button fetches this repository's
+`manifest.json` (one small HTTPS request, no personal data). If a newer version
+is out, a dot appears on the button and the next click shows what changed, from
+`CHANGELOG.md`. *Update…* opens a terminal that runs `omarchy plugin update`
+(it shows the diff and asks), then `install.sh`, which asks before rebuilding
+the calculator. If the plugin was updated but the calculator was not rebuilt,
+the button offers *Finish update…* instead. *Later* hides that version. Set
+`"update_check": false` in `~/.config/omacalc-84/config.json` to turn the
+check off. By hand:
+
+```sh
+omarchy plugin update fans.omarchy.omacalc-84
+~/.config/omarchy/plugins/fans.omarchy.omacalc-84/install.sh
+```
+
+The update script is run the same way as the calculator: by absolute path,
+after the ownership and permission checks, with a closed environment. See
+[docs/update-alerts.md](docs/update-alerts.md) for how it is built.
+
 ## Remove
 
 ```sh

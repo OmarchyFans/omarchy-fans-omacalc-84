@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "fans.omarchy.omacalc-84",
   "name": "OmaCalc-84",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "omarchy.fans",
   "license": "MIT",
   "description": "A full TI-84 Plus-style graphing calculator one click from your Omarchy bar. Graph functions, parametrics, polars and sequences with zoom, trace and the CALC menu; build tables; run 1-Var/2-Var stats, eleven regressions and fifteen statistics tests; and work with lists, matrices, complex numbers and every DISTR distribution, on a faithful calculator faceplate that follows your Omarchy theme.",
