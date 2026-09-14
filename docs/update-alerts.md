@@ -53,7 +53,7 @@ something from the plugin folder: helpers copied into `~/.local/bin`, a binary
 built from source. `omarchy plugin update` refreshes the plugin files but not
 those, so the window can end up newer than what it runs. The helper reports
 `mismatch` when the widget's version differs from the helper's, or when the
-built artifact is older than `manifest.json`; the widget then shows
+build stamp `install.sh` wrote names another version; the widget then shows
 **Finish update…**, which runs `install.sh` directly. A helper too old to know
 the `check` command exits non-zero; treat that as a mismatch too.
 
@@ -135,6 +135,6 @@ Environment for tests: `OMARCHY_PLUGIN_UPDATE_RAW` (base URL, `file://` works),
 - Kind: bar-only widget (`BarWidget.qml`) that starts a compiled calculator; the update helper is `lib/update.sh` itself.
 - Version places: `manifest.json`, `CHANGELOG.md`. The binary carries no version string.
 - Cache: `~/.cache/omacalc-84/update-check.json`. Opt-out: `"update_check": false` in `~/.config/omacalc-84/config.json` (create it), or in the widget's `shell.json` entry.
-- Mismatch case: `build/omacalc-84` is built from the sources by `install.sh`. After `omarchy plugin update`, `manifest.json` is newer than the binary, the helper reports `artifact_stale`, and the popup shows *Finish update…*, which reruns `install.sh` (it asks before rebuilding; needs Qt 6 qmake).
+- Mismatch case: `build/omacalc-84` is built from the sources by `install.sh`, which writes `build/.built-from` with the plugin version it built for. After `omarchy plugin update` to a version whose sources changed, the stamp names the old version, the helper reports `artifact_stale`, and the popup shows *Finish update…*, which reruns `install.sh` (it offers the rebuild, default yes; needs Qt 6 qmake). Releases that change nothing under `src/` still trip it once; saying no to the rebuild rewrites the stamp and clears it. A missing stamp (an install from before 1.1.0) is not stale.
 - Every run of `lib/update.sh` goes through `Launcher.qml`'s path check (ownership and mode of every directory and the file) and a closed environment, the same as the calculator binary, because the marketplace review requires it.
 - The widget checks on load and every six hours, shows a dot, and the next left click opens the popup (Update…, Later, Open calculator); right click still opens the graph screen.

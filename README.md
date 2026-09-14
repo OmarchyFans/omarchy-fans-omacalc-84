@@ -109,8 +109,9 @@ About once every six hours the bar button fetches this repository's
 is out, a dot appears on the button and the next click shows what changed, from
 `CHANGELOG.md`. *Update…* opens a terminal that runs `omarchy plugin update`
 (it shows the diff and asks), then `install.sh`, which asks before rebuilding
-the calculator. If the plugin was updated but the calculator was not rebuilt,
-the button offers *Finish update…* instead. *Later* hides that version. Set
+the calculator. If the plugin was updated but the calculator was built for an
+older version (`install.sh` records which), the button offers *Finish update…*
+instead. *Later* hides that version. Set
 `"update_check": false` in `~/.config/omacalc-84/config.json` to turn the
 check off. By hand:
 

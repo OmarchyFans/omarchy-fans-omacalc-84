@@ -31,6 +31,7 @@ Item {
   property var pendingArguments: []
   property bool pendingScript: false
   property var pendingProcess: null
+  property bool pendingQuiet: false     // a refusal only emits finished(), no notification
 
   readonly property var passedVariables: [
     "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "XDG_RUNTIME_DIR", "WAYLAND_DISPLAY",
@@ -66,24 +67,26 @@ Item {
   }
 
   // Run one of this plugin's scripts after the same checks, either in PROCESS
-  // (a Quickshell Process, whose command is set here) or detached.
-  function runScript(path, args, process) {
-    start(path, args, true, process || null)
+  // (a Quickshell Process, whose command is set here) or detached. QUIET runs
+  // (the automatic update check) never raise a notification when refused.
+  function runScript(path, args, process, quiet) {
+    start(path, args, true, process || null, quiet === true)
   }
 
-  function start(target, args, script, process) {
+  function start(target, args, script, process, quiet) {
     if (checker.running) return
     pendingTarget = target
     pendingArguments = args || []
     pendingScript = script
     pendingProcess = process
+    pendingQuiet = quiet === true
     output.expected = checkedPaths(target)
     checker.command = [statTool, "-c", "%F|%u|%a", "/proc/self/stat"].concat(output.expected)
     checker.running = true
   }
 
   function refuse(reason) {
-    Quickshell.execDetached({
+    if (!pendingQuiet) Quickshell.execDetached({
       command: [notifyTool, "OmaCalc-84", reason],
       clearEnvironment: true,
       environment: environment()
@@ -93,6 +96,7 @@ Item {
 
   // Returns an empty string when the stat output is acceptable, otherwise why not.
   function verify(text, exitCode) {
+    var what = pendingScript ? "the update helper" : "the calculator"
     var missing = pendingScript
       ? "The plugin file " + pendingTarget + " is missing. Reinstall the plugin."
       : "The calculator is not built yet. Run install.sh in " + pluginRoot + "."
@@ -117,10 +121,10 @@ Item {
         if ((mode & 0o100) === 0) return where + " is not executable. Run install.sh again."
         if ((mode & 0o6000) !== 0) return where + " is setuid or setgid; refusing to run it."
       } else {
-        if (type !== "directory") return where + " is not a plain directory; refusing to run the calculator."
-        if (owner !== uid && owner !== "0") return where + " is owned by another user; refusing to run the calculator."
+        if (type !== "directory") return where + " is not a plain directory; refusing to run " + what + "."
+        if (owner !== uid && owner !== "0") return where + " is owned by another user; refusing to run " + what + "."
       }
-      if ((mode & 0o022) !== 0) return where + " is group or world writable; refusing to run the calculator."
+      if ((mode & 0o022) !== 0) return where + " is group or world writable; refusing to run " + what + "."
     }
     return ""
   }

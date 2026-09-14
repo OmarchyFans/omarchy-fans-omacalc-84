@@ -37,11 +37,14 @@ BarWidget {
   readonly property string updater: launcher.pluginRoot + "/lib/update.sh"
   property string version: ""
   property var updateInfo: null
-  property bool updateHidden: false
   readonly property bool updateAvailable: !!updateInfo && updateInfo.update_available === true
                                           && updateInfo.dismissed !== updateInfo.latest
   readonly property bool updateMismatch: !!updateInfo && updateInfo.mismatch === true
-  readonly property bool updatePending: !updateHidden && (updateAvailable || updateMismatch)
+  // What the alert is about: the newer version, or "mismatch". Update… and Later
+  // hide that key only, so the next version (or a new mismatch) shows again.
+  readonly property string updateKey: updateAvailable ? String(updateInfo.latest) : (updateMismatch ? "mismatch" : "")
+  property string updateHiddenKey: ""
+  readonly property bool updatePending: updateKey !== "" && updateKey !== updateHiddenKey
 
   FileView {
     path: launcher.pluginRoot + "/manifest.json"
@@ -53,7 +56,7 @@ BarWidget {
   }
   function checkUpdates() {
     if (root.setting("update_check", true) === false || updateProc.running) return
-    launcher.runScript(root.updater, ["check", root.version], updateProc)
+    launcher.runScript(root.updater, ["check", root.version], updateProc, true)
   }
   Process {
     id: updateProc
@@ -62,12 +65,12 @@ BarWidget {
   }
   Timer { interval: 6 * 3600 * 1000; running: true; repeat: true; onTriggered: root.checkUpdates() }
   function runUpdate() {
-    root.updateHidden = true
+    root.updateHiddenKey = root.updateKey
     updatePopup.open = false
     launcher.runScript(root.updater, ["run", root.updateAvailable ? "all" : "install"], null)
   }
   function dismissUpdate() {
-    root.updateHidden = true
+    root.updateHiddenKey = root.updateKey
     updatePopup.open = false
     if (root.updateAvailable && root.updateInfo.latest) launcher.runScript(root.updater, ["dismiss", String(root.updateInfo.latest)], null)
   }

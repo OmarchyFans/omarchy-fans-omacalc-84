@@ -20,8 +20,21 @@ BIN="$REPO/build/omacalc-84"
 YES=0; [[ ${1:-} == --yes ]] && YES=1
 ask() { (( YES )) && return 0; read -rp "$1 [y/N] " a; [[ $a == [yY]* ]]; }
 
-# 1. Build
-if [[ -x $BIN ]] && ! ask "Rebuild the calculator?"; then
+# 1. Build. build/.built-from records which plugin version the binary was built
+# for; the bar button offers "Finish update" while it names another one
+# (lib/update.sh, docs/update-alerts.md).
+VERSION=$(jq -r .version "$REPO/manifest.json" 2>/dev/null || echo unknown)
+STAMP="$REPO/build/.built-from"
+BUILT_FOR=$(head -c 64 "$STAMP" 2>/dev/null || true)
+if [[ -x $BIN && -n $BUILT_FOR && $BUILT_FOR != "$VERSION" ]]; then
+  echo "The calculator was built for $BUILT_FOR; the plugin is now $VERSION."
+  REBUILD=1; (( YES )) || { read -rp "Rebuild it? [Y/n] " a; [[ $a == [nN]* ]] && REBUILD=0; }
+elif [[ -x $BIN ]]; then
+  REBUILD=0; ask "Rebuild the calculator?" && REBUILD=1
+else
+  REBUILD=1
+fi
+if (( ! REBUILD )); then
   echo "  using the existing $BIN"
 else
   if ! command -v qmake6 >/dev/null 2>&1 && ! command -v qmake >/dev/null 2>&1; then
@@ -31,6 +44,7 @@ else
   fi
   "$REPO/bin/build"
 fi
+mkdir -p "$REPO/build" && printf '%s\n' "$VERSION" >"$STAMP"
 
 # 2. On PATH
 if ask "Link omacalc-84 into ~/.local/bin?"; then
